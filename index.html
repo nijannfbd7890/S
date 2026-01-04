@@ -205,13 +205,15 @@
 		  <div class="card-icon">📊</div>
 		  <div class="card-title">Total Transactions</div>
 		  <div class="card-value" id="totalTransactions">0</div>
+		  <!-- <div class="card-value" id="totalTransactions">Loading…</div> -->
 		  <div class="card-sub">All bookings</div>
 		</div>
 
 		<div class="card">
 		  <div class="card-icon">📐</div>
 		  <div class="card-title">Total Sq.ft</div>
-		  <div class="card-value" id="totalSqft">0</div>
+		  <div class="card-value" id="totalSqft">0</div>-
+		  <!-- <div class="card-value" id="totalSqft">Loading…</div> -->
 		  <div class="card-sub">Combined area</div>
 		</div>
 
@@ -228,96 +230,73 @@
 
 	</div>
 	
-
-	
-	
 	<script>
-const months = [
-  ["January",24,29819,42],
-  ["February",18,21450,31],
-  ["March",12,15832,18],
-  ["April",20,28437,29],
-  ["May",16,22340,25],
-  ["June",22,30120,35],
-  ["July",19,26780,30],
-  ["August",14,19840,22],
-  ["September",21,28990,33],
-  ["October",26,33210,40],
-  ["November",17,24100,28],
-  ["December",23,35437,50]
-];
+const debug = msg => {
+  document.getElementById("debugText").innerText = msg;
+};
 
-const colors = ["blue","orange","pink","green"];
-const container = document.getElementById("monthCards");
+fetch("Yearly_Booking_Report.csv")
+  .then(res => {
+    debug("Fetch status: " + res.status);
+    if (!res.ok) throw new Error("CSV not found");
+    return res.text();
+  })
+  .then(text => {
+    debug("CSV loaded. Length: " + text.length);
 
-container.innerHTML = "";
-
-months.forEach((m,i)=>{
-  container.innerHTML += `
-    <div class="location ${colors[i % 4]}">
-      <h3>${m[0]}</h3>
-      <h1>${m[1]}</h1>
-      <p>${m[2].toLocaleString()} sq.ft</p>
-      <span>${m[3]}%</span>
-    </div>
-  `;
-});
-</script>
-
-
-
-</body>
-
-<script>
-(async function () {
-  try {
-    const response = await fetch("Yearly_Booking_Report.csv");
-    if (!response.ok) {
-      throw new Error("CSV file not found");
+    const rows = text.trim().split(/\r?\n/);
+    if (rows.length < 2) {
+      debug("CSV has no data rows");
+      return;
     }
 
-    const text = await response.text();
-    const lines = text.trim().split(/\r?\n/);
-
-    // Read headers safely
-    const headers = lines[0]
+    const headers = rows[0]
       .replace(/\uFEFF/g, "")
       .split(",")
       .map(h => h.trim());
 
-    console.log("CSV Headers:", headers);
+    debug("Headers found: " + headers.join(" | "));
 
-    const bookingDateIndex = headers.indexOf("BOOKING DATE");
-    const sqftIndex = headers.indexOf("ACTUAL TOTAL SQ-FT");
+    const dateIdx = headers.indexOf("BOOKING DATE");
+    const sqftIdx = headers.indexOf("ACTUAL TOTAL SQ-FT");
 
-    if (bookingDateIndex === -1 || sqftIndex === -1) {
-      throw new Error("Required columns not found in CSV");
+    if (dateIdx === -1 || sqftIdx === -1) {
+      debug("Required headers NOT found");
+      return;
     }
 
     let totalTransactions = 0;
     let totalSqft = 0;
 
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
+    for (let i = 1; i < rows.length; i++) {
+      if (!rows[i].trim()) continue;
 
-      const cols = lines[i].split(",").map(c => c.trim());
+      const cols = rows[i]
+        .split(",")
+        .map(c => c.replace(/"/g, "").trim());
 
-      if (cols[bookingDateIndex]) totalTransactions++;
-      if (cols[sqftIndex]) {
-        totalSqft += Number(cols[sqftIndex]) || 0;
-      }
+      if (cols[dateIdx]) totalTransactions++;
+      if (cols[sqftIdx]) totalSqft += Number(cols[sqftIdx]) || 0;
     }
 
-    document.getElementById("totalTransactions").textContent =
-      totalTransactions;
+    document.getElementById("totalTransactions").innerText = totalTransactions;
+    document.getElementById("totalSqft").innerText = totalSqft.toLocaleString();
 
-    document.getElementById("totalSqft").textContent =
-      totalSqft.toLocaleString();
-
-  } catch (err) {
-    console.error("CSV READ ERROR:", err);
-  }
-})();
+    debug(
+      "SUCCESS → Transactions: " +
+      totalTransactions +
+      ", Sq.ft: " +
+      totalSqft
+    );
+  })
+  .catch(err => {
+    debug("ERROR: " + err.message);
+  });
 </script>
 
+	
+
+	
+	
+	</body>
 </html>
