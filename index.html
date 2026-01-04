@@ -61,7 +61,7 @@
 	.card {
 	  background: var(--card);
 	  border-radius: 18px;
-	  padding: 26px;
+	  padding: 18px;
 	  box-shadow: var(--shadow);
 	  position: relative;
 	  overflow: hidden;
@@ -80,7 +80,7 @@
 	}
 
 	.card-title {
-	  font-size: 14px;
+	  font-size: 12px;
 	  font-weight: 600;
 	  color: var(--text-muted);
 	  text-transform: uppercase;
@@ -175,6 +175,63 @@
 		grid-template-columns: 1fr;
 	  }
 	}
+	
+	/* ===== TABLE COLUMN COLOR STYLES ===== */
+
+/* Overall (neutral) */
+.col-overall {
+  background: #f8fafc;
+}
+
+/* Overall Live (blue like GST) */
+.col-live {
+  background: #f0f6ff;
+}
+.col-live b,
+.col-live small {
+  color: #2563eb; /* blue */
+}
+
+/* Cancel (orange/pink like ECR/Nellikuppam) */
+.col-cancel {
+  background: #fff7ed;
+}
+.col-cancel b,
+.col-cancel small {
+  color: #ea580c; /* orange */
+}
+
+.col-live,
+.col-cancel {
+  border-radius: 6px;
+}
+
+/* STATUS PILLS */
+.status-pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-pill.excellent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-pill.good {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-pill.average {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+
+
 	</style>
 	</head>
 
@@ -204,16 +261,14 @@
 		<div class="card">
 		  <div class="card-icon">📊</div>
 		  <div class="card-title">Total Transactions</div>
-		  <div class="card-value" id="totalTransactions">0</div>
-		  <!-- <div class="card-value" id="totalTransactions">Loading…</div> -->
+		  <div class="card-value" id="totalTransactions">0</div>		 
 		  <div class="card-sub">All bookings</div>
 		</div>
 
 		<div class="card">
 		  <div class="card-icon">📐</div>
 		  <div class="card-title">Total Sq.ft</div>
-		  <div class="card-value" id="totalSqft">0</div>-
-		  <!-- <div class="card-value" id="totalSqft">Loading…</div> -->
+		  <div class="card-value" id="totalSqft">0</div>
 		  <div class="card-sub">Combined area</div>
 		</div>
 
@@ -227,54 +282,257 @@
 
 	  <!-- MONTHS -->
 	  <div class="Months" id="monthCards"></div>
+	  
+	<!-- FILTER + TABLE ROW -->
+	<div style="
+	  display:grid;
+	  grid-template-columns: 360px 1fr;  /* ⬅ slimmer left column */
+	  gap:24px;
+	  margin-top:30px;
+	  align-items:start;
+	">
 
-	</div>
+
+  <!-- FILTER CARD -->
+  <div style="display:flex; flex-direction:column; gap:18px;">
+  <div class="card">
+    <div class="card-title">Filter by Team</div>
+
+    <select id="teamFilter" style="
+      width:100%;
+      margin-top:8px;
+      padding:8px 12px;
+      border-radius:8px;
+      border:1px solid #e5e7eb;
+      font-size:13px;
+      background:#fff;
+    ">
+      <option value="All Teams">All Teams</option>
+      <option value="Ashok Sir">Ashok Sir</option>
+      <option value="Gopi Sir">Gopi Sir</option>
+      <!-- <option value="Gopi Sir">Gistak</option> -->
+      <option value="Kumaresan Sir">Kumaresan Sir</option>
+      <option value="Latha Mam & Ayyappan Sir">Latha Mam & Ayyappan Sir</option>
+      <option value="Prabhakaran Sir">Prabhakaran Sir</option>
+      <option value="Rajiv Sir">Rajiv Sir</option>
+      <option value="Ranjith Sir">Ranjith Sir</option>
+      <option value="Sankar Sir">Sankar Sir</option>
+      <option value="Selvakumar Sir">Selvakumar Sir</option>
+      <option value="Senthil Sir">Senthil Sir</option>
+      <option value="Suriya Sir">Suriya Sir</option>
+      <option value="Thangadurai Sir">Thangadurai Sir</option>
+    </select>
+  </div>
+  
+  <!-- CHART CARD -->
+<div class="card" style="margin-top:24px;">
+  
+  <div class="card-title" style="margin-bottom:6px;">Booking Distribution</div>
+
+  <!-- <p id="chartTotalText" style="margin:8px 0 12px; color:#64748b;"> -->
+    <!-- Total: 0 transactions -->
+  <!-- </p> -->
+  
+  <p id="chartTotalText"
+   style="
+     text-align:center;
+     font-size:13px;
+     color:#64748b;
+     margin:4px 0 10px;
+   ">
+</p>
+
+
+
+  <div style="display:flex; justify-content:center; align-items:center;">
+  <canvas id="teamStatusChart" width="220" height="220"></canvas>
+  
+  </div>
+  
+</div>
+<div style="text-align:center; margin-top:12px;">
+  <button id="downloadBtn" style="
+    background:#4f8cff;
+    color:#ffffff;
+    font-weight:600;
+    border:none;
+    border-radius:8px;
+    padding:8px 16px;
+    cursor:pointer;
+    font-size:13px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  ">
+    ⬇️ Download PDF
+  </button>
+</div>
+
+  </div>
+  
+  
+  
+  
+
+
+  <!-- TABLE CARD -->
+  <div class="card" style="padding:22px;">
+  <!-- <div class="card"> -->
+    <div class="card-title">Team Performance Details</div>
+
+    <table style="width:100%; border-collapse:collapse; margin-top:14px;">
+      <thead>
+        <tr style="border-bottom:1px solid #e5e7eb;">
+          <th style="text-align:left; padding:10px;">#</th>
+          <th style="text-align:left; padding:10px;">Team Name</th>
+          <th style="text-align:center; padding:10px;">
+            Overall<br><small>Count / Sq.ft</small>
+          </th>
+		  <th class="col-live" style="text-align:center; padding:10px;">
+  Overall Live<br><small>Count / Sq.ft / %</small>
+</th>
+
+<th class="col-cancel" style="text-align:center; padding:10px;">
+  Cancel<br><small>Count / Sq.ft / %</small>
+</th>
+
+		  
+          <th style="text-align:center; padding:10px;">Status</th>
+        </tr>
+      </thead>
+
+      <tbody id="teamTableBody">
+        <!-- rows injected by JS -->
+      </tbody>
+    </table>
+  </div>
+
+</div>
 	
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- PDF Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+
+
 <script>
-/* ================================
-   STEP 1: LOAD CSV USING PAPAPARSE
-   ================================ */
-Papa.parse("Yearly_Booking_Report.csv", {
+let fullCSVData = [];
+let teamStatusChart = null;
+
+// Teams to hide temporarily
+const HIDDEN_TEAMS = ["gistak"];
+
+
+Papa.parse(
+  "https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv",
+  {
   download: true,
   header: true,
   skipEmptyLines: true,
-  complete: function (results) {
-    initDashboard(results.data);
+  complete: function (res) {
+    console.log("CSV DATA:", res.data); // DEBUG
+    fullCSVData = res.data;
+	initDashboard(fullCSVData);
+	renderTeamTable(fullCSVData);
+	renderTeamStatusChart(fullCSVData);
+
   },
   error: function (err) {
     console.error("CSV Load Error:", err);
   }
 });
 
-/* ======================================
-   STEP 2: INITIALIZE DASHBOARD FROM CSV
-   ====================================== */
+const filtered = fullCSVData.filter(row => {
+  const team =
+    row["TEAM NAME"] ||
+    row["Team Name"] ||
+    row["TEAM"] ||
+    row["team"];
+
+  if (!team) return false;
+
+  return normalizeTeamName(team) === normalizeTeamName(selectedTeam);
+
+  });
+
+
+
+
+function formatNumber(value) {
+  if (!value || isNaN(value)) return "0";
+  return Math.round(Number(value)).toString();
+}
+
+
+function normalizeTeamName(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function getVisibleData(data) {
+  return data.filter(row => {
+    const team = getTeamName(row);
+    return !HIDDEN_TEAMS.includes(normalizeTeamName(team));
+  });
+}
+
+
+
+function getTeamName(row) {
+  return (
+    row["TEAM NAME"] ||
+    row["Team Name"] ||
+    row["TEAM"] ||
+    row["team"] ||
+    ""
+  ).trim();
+}
+
+
 function initDashboard(data) {
+  if (!data || data.length === 0) return;
+  
+   // ⛔ Exclude hidden teams (GISTAK)
+  const visibleData = getVisibleData(data);
 
   let totalTransactions = 0;
   let totalSqft = 0;
   const monthMap = {};
 
-  data.forEach(row => {
-    const rawDate = row["BOOKING DATE"];
-    const sqft = Number(row["ACTUAL TOTAL SQ-FT"]) || 0;
+  const sqftKey = Object.keys(data[0]).find(k =>
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "actual total sq-ft"
+  );
 
+  console.log("Detected SQFT column:", sqftKey);
+
+  visibleData.forEach(row => {
+    const rawDate = row["BOOKING DATE"];
     if (!rawDate) return;
 
-    // Handle dd-mm-yyyy or dd/mm/yyyy
-    const parts = rawDate.includes("-")
-      ? rawDate.split("-")
-      : rawDate.split("/");
+    const d = rawDate.split("-");
+    if (d.length !== 3) return;
 
-    if (parts.length !== 3) return;
-
-    const date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    const date = new Date(`${d[2]}-${d[1]}-${d[0]}`);
     if (isNaN(date)) return;
 
     const month = date.toLocaleString("default", { month: "long" });
 
-    totalTransactions++;
-    totalSqft += sqft;
+    const sqftRaw = row[sqftKey];
+
+	let sqft = 0;
+	if (sqftRaw !== undefined && sqftRaw !== null) {
+	  const cleaned = String(sqftRaw)
+		.replace(/,/g, "")
+		.replace(/-/g, "")
+		.trim();
+
+	  sqft = cleaned !== "" && !isNaN(cleaned) ? Number(cleaned) : 0;
+	}
+
+totalTransactions++;
+totalSqft += sqft;
+
 
     if (!monthMap[month]) {
       monthMap[month] = { count: 0, sqft: 0 };
@@ -284,12 +542,15 @@ function initDashboard(data) {
     monthMap[month].sqft += sqft;
   });
 
-  /* ===== UPDATE SUMMARY ===== */
-  document.getElementById("totalTransactions").innerText = totalTransactions;
-  document.getElementById("totalSqft").innerText = totalSqft.toLocaleString();
+  document.getElementById("totalTransactions").innerText =
+  formatNumber(totalTransactions);
 
-  /* ===== RENDER MONTH CARDS ===== */
-  const order = [
+
+ document.getElementById("totalSqft").innerText =
+  formatNumber(totalSqft);
+
+
+  const months = [
     "January","February","March","April","May","June",
     "July","August","September","October","November","December"
   ];
@@ -298,21 +559,382 @@ function initDashboard(data) {
   const container = document.getElementById("monthCards");
   container.innerHTML = "";
 
-  order.forEach((m, i) => {
+  months.forEach((m, i) => {
     const d = monthMap[m] || { count: 0, sqft: 0 };
-    container.innerHTML += `
-      <div class="location ${colors[i % 4]}">
-        <h3>${m}</h3>
-        <h1>${d.count}</h1>
-        <p>${d.sqft.toLocaleString()} sq.ft</p>
-      </div>
-    `;
+	const percentage =
+  totalSqft > 0
+    ? Math.round((d.sqft / totalSqft) * 100)
+    : 0;
+
+container.innerHTML += `
+  <div class="location ${colors[i % 4]}">
+    <h3>${m}</h3>
+    <h1>${formatNumber(d.count)}</h1>
+    <p>${formatNumber(d.sqft)} sq.ft</p>
+    <span>${percentage}%</span>
+  </div>
+`;
+
   });
 }
+
+
+function getTeamName(row) {
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "team name"
+  );
+
+  return key ? String(row[key]).trim() : "";
+}
+
+function getDailyStatus(row) {
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "rough daily updation"
+  );
+  return key ? String(row[key]).toLowerCase() : "";
+}
+
+function buildStatusSummary(data) {
+  let live = 0;
+  let cancel = 0;
+
+  data.forEach(row => {
+    const status = getDailyStatus(row);
+
+    if (
+      status.includes("live") ||
+      status.includes("registration done") ||
+      status.includes("agreement done")
+    ) {
+      live++;
+    } else if (status.includes("cancel")) {
+      cancel++;
+    }
+  });
+
+  return { live, cancel, total: live + cancel };
+}
+
+// ===============================
+// CENTER TEXT PLUGIN (ADD ONLY)
+// ===============================
+const centerTextPlugin = {
+  id: "centerText",
+  afterDraw(chart) {
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return;
+
+    const data = chart.data.datasets[0].data;
+    const total = data.reduce((a, b) => a + b, 0);
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Main number
+    ctx.font = "700 34px Segoe UI";
+    ctx.fillStyle = "#0f172a";
+    ctx.fillText(
+      total,
+      chartArea.left + chartArea.width / 2,
+      chartArea.top + chartArea.height / 2 - 6
+    );
+
+    // Sub text
+    ctx.font = "500 14px Segoe UI";
+    ctx.fillStyle = "#64748b";
+    ctx.fillText(
+      "Total Count",
+      chartArea.left + chartArea.width / 2,
+      chartArea.top + chartArea.height / 2 + 18
+    );
+
+    ctx.restore();
+  }
+};
+
+
+
+function renderTeamStatusChart(data) {
+  const ctx = document.getElementById("teamStatusChart").getContext("2d");
+  const summary = buildStatusSummary(data);
+
+  document.getElementById("chartTotalText").innerText =
+    `Total: ${summary.total} transactions`;
+
+  if (teamStatusChart) {
+    teamStatusChart.destroy();
+  }
+
+  teamStatusChart = new Chart(ctx, {
+  plugins: [centerTextPlugin],
+    type: "doughnut",
+    data: {
+      labels: ["Live", "Cancel"],
+      datasets: [{
+        data: [summary.live, summary.cancel],
+        backgroundColor: ["#60a5fa", "#34d399"], // blue + green (soft)
+        borderWidth: 4,
+        borderColor: "#ffffff"
+      }]
+    },
+    options: {
+      cutout: "78%",
+      plugins: {
+        legend: {
+  position: "bottom",
+  labels: {
+  usePointStyle: true,
+  pointStyle: "circle",
+  padding: 18,
+  font: {
+    size: 13,
+    weight: "600"
+  },
+  generateLabels(chart) {
+    const data = chart.data.datasets[0].data;
+    const total = data.reduce((a, b) => a + b, 0);
+
+    return chart.data.labels.map((label, i) => {
+      const value = data[i];
+      const percent = total ? Math.round((value / total) * 100) : 0;
+
+      return {
+        text: `${label} ${percent}%`,
+        fillStyle: chart.data.datasets[0].backgroundColor[i],
+        strokeStyle: chart.data.datasets[0].backgroundColor[i],
+        index: i
+      };
+    });
+  }
+}
+
+}
+
+      }
+    }
+  });
+}
+
+function getPerformanceStatus(livePercent, cancelPercent) {
+  const dominantPercent = Math.max(livePercent, cancelPercent);
+
+  if (dominantPercent >= 55) {
+    return "Excellent";
+  } else if (dominantPercent >= 40) {
+    return "Good";
+  } else {
+    return "Average";
+  }
+}
+
+
+
+function renderTeamTable(data) {
+  const tbody = document.getElementById("teamTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  // group by team name
+  const teamMap = {};
+
+  data.forEach(row => {
+	const team = getTeamName(row);
+	
+    if (!team) return;
+
+    const sqft = Number(row["Actual TOTAL SQ-FT"] || 0);
+
+    if (!teamMap[team]) {
+  teamMap[team] = {
+    count: 0,
+    sqft: 0,
+    liveCount: 0,
+    liveSqft: 0,
+    cancelCount: 0,
+    cancelSqft: 0
+  };
+}
+
+
+    teamMap[team].count += 1;
+    teamMap[team].sqft += sqft;
+	const dailyStatus = getDailyStatus(row);
+
+	if (
+	  dailyStatus.includes("live") ||
+	  dailyStatus.includes("registration done") ||
+	  dailyStatus.includes("agreement done")
+	) {
+	  teamMap[team].liveCount += 1;
+	  teamMap[team].liveSqft += sqft;
+	}
+	else if (dailyStatus.includes("cancel")) {
+	  teamMap[team].cancelCount += 1;
+	  teamMap[team].cancelSqft += sqft;
+	}
+
+  });
+
+  let index = 1;
+
+	const sortedTeams = Object.entries(teamMap)
+  .sort((a, b) => b[1].sqft - a[1].sqft);
+
+  //Object.entries(teamMap).forEach(([team, stats]) => {
+  sortedTeams.forEach(([team, stats]) => {
+
+  // ⛔ Hide GISTAK for now
+  if (HIDDEN_TEAMS.includes(normalizeTeamName(team))) {
+    return;
+  }
+
+    const tr = document.createElement("tr");
+    tr.style.borderBottom = "1px solid #e5e7eb";
+	
+	const livePercent = stats.count
+  ? Math.round((stats.liveCount / stats.count) * 100)
+  : 0;
+
+const cancelPercent = stats.count
+  ? Math.round((stats.cancelCount / stats.count) * 100)
+  : 0;
+
+const status = getPerformanceStatus(livePercent, cancelPercent);
+
+
+    tr.innerHTML = `
+      <td style="padding:10px;">${index++}</td>
+      <td style="padding:10px; font-weight:600;">${team}</td>
+      <td style="padding:10px; text-align:center;">
+        ${stats.count}<br>
+        <small>${Math.round(stats.sqft)}</small>
+      </td>
+	  <td class="col-live" style="padding:10px; text-align:center;">
+  ${stats.liveCount}<br>
+  <small>${Math.round(stats.liveSqft)}</small><br>
+  <small>
+    ${stats.count ? Math.round((stats.liveCount / stats.count) * 100) : 0}%
+  </small>
+</td>
+
+<td class="col-cancel" style="padding:10px; text-align:center;">
+  ${stats.cancelCount}<br>
+  <small>${Math.round(stats.cancelSqft)}</small><br>
+  <small>
+    ${stats.count ? Math.round((stats.cancelCount / stats.count) * 100) : 0}%
+  </small>
+</td>
+
+      <td style="padding:10px; text-align:center;">
+  <span class="status-pill ${status.toLowerCase()}">
+    ${status}
+  </span>
+</td>
+
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+
+// ===============================
+// TEAM FILTER HANDLER (ADD ONLY)
+// ===============================
+const teamSelect = document.getElementById("teamFilter");
+
+teamSelect.addEventListener("change", function () {
+  const selectedTeam = this.value;
+
+  // If "All Teams", show full data
+  if (selectedTeam === "All Teams") {
+    initDashboard(fullCSVData);
+	renderTeamTable(fullCSVData);
+	renderTeamStatusChart(fullCSVData);
+    return;
+  }
+
+  // Filter rows by team name
+  const filteredData = fullCSVData.filter(row => {
+  const teamFromCSV = getTeamName(row);
+
+  return normalizeTeamName(teamFromCSV) ===
+         normalizeTeamName(selectedTeam);
+});
+
+
+  console.log("Selected Team:", selectedTeam);
+  console.log("Filtered Rows:", filteredData.length);
+  console.log([...new Set(fullCSVData.map(getTeamName))]);
+  console.log("Filtered teams:", [...new Set(filteredData.map(getTeamName))]);
+
+
+
+  initDashboard(filteredData);
+  renderTeamTable(filteredData);
+  renderTeamStatusChart(filteredData);
+
+
+});
+
+
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+document.getElementById("downloadBtn").addEventListener("click", async () => {
+  const { jsPDF } = window.jspdf;
 
-		
+  const button = document.getElementById("downloadBtn");
+  const dashboard = document.querySelector(".container");
+
+  if (!dashboard) {
+    alert("Dashboard not found!");
+    return;
+  }
+
+  // Hide button while capturing
+  button.style.visibility = "hidden";
+  window.scrollTo(0, 0);
+
+  try {
+    const canvas = await html2canvas(dashboard, {
+      scale: 2.5,
+      useCORS: true,
+      backgroundColor: "#f5f7fb",
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+    const pdfWidth = canvas.width * 0.264583;
+    const pdfHeight = canvas.height * 0.264583;
+
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? "l" : "p",
+      unit: "mm",
+      format: [pdfWidth, pdfHeight]
+    });
+
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
+    const now = new Date();
+    const fileName =
+      `Booking_Status_Report_${now.getDate()}_${now.getMonth()+1}_${now.getFullYear()}.pdf`;
+
+    pdf.save(fileName);
+
+  } catch (err) {
+    console.error("PDF error:", err);
+    alert("PDF download failed");
+  } finally {
+    button.style.visibility = "visible";
+  }
+});
+</script>
+
+	
 </body>
 </html>
