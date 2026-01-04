@@ -231,72 +231,88 @@
 	</div>
 	
 	<script>
-const debug = msg => {
-  document.getElementById("debugText").innerText = msg;
-};
-
 fetch("Yearly_Booking_Report.csv")
   .then(res => {
-    debug("Fetch status: " + res.status);
     if (!res.ok) throw new Error("CSV not found");
     return res.text();
   })
   .then(text => {
-    debug("CSV loaded. Length: " + text.length);
-
     const rows = text.trim().split(/\r?\n/);
-    if (rows.length < 2) {
-      debug("CSV has no data rows");
-      return;
-    }
 
     const headers = rows[0]
       .replace(/\uFEFF/g, "")
       .split(",")
       .map(h => h.trim());
 
-    debug("Headers found: " + headers.join(" | "));
-
     const dateIdx = headers.indexOf("BOOKING DATE");
     const sqftIdx = headers.indexOf("ACTUAL TOTAL SQ-FT");
 
-    if (dateIdx === -1 || sqftIdx === -1) {
-      debug("Required headers NOT found");
-      return;
-    }
+    if (dateIdx === -1 || sqftIdx === -1) return;
 
     let totalTransactions = 0;
     let totalSqft = 0;
+    const monthMap = {};
 
     for (let i = 1; i < rows.length; i++) {
       if (!rows[i].trim()) continue;
 
       const cols = rows[i]
-        .split(",")
+        .match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)
         .map(c => c.replace(/"/g, "").trim());
 
-      if (cols[dateIdx]) totalTransactions++;
-      if (cols[sqftIdx]) totalSqft += Number(cols[sqftIdx]) || 0;
+      const rawDate = cols[dateIdx];
+      const sqft = Number(cols[sqftIdx]) || 0;
+
+      if (!rawDate) continue;
+
+      const parts = rawDate.includes("-")
+        ? rawDate.split("-")
+        : rawDate.split("/");
+
+      if (parts.length !== 3) continue;
+
+      const date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      if (isNaN(date)) continue;
+
+      const month = date.toLocaleString("default", { month: "long" });
+
+      totalTransactions++;
+      totalSqft += sqft;
+
+      if (!monthMap[month]) monthMap[month] = { count: 0, sqft: 0 };
+      monthMap[month].count++;
+      monthMap[month].sqft += sqft;
     }
 
+    // SUMMARY
     document.getElementById("totalTransactions").innerText = totalTransactions;
     document.getElementById("totalSqft").innerText = totalSqft.toLocaleString();
 
-    debug(
-      "SUCCESS → Transactions: " +
-      totalTransactions +
-      ", Sq.ft: " +
-      totalSqft
-    );
+    // MONTHS
+    const order = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
+
+    const colors = ["blue","orange","pink","green"];
+    const container = document.getElementById("monthCards");
+    container.innerHTML = "";
+
+    order.forEach((m, i) => {
+      const d = monthMap[m] || { count: 0, sqft: 0 };
+      container.innerHTML += `
+        <div class="location ${colors[i % 4]}">
+          <h3>${m}</h3>
+          <h1>${d.count}</h1>
+          <p>${d.sqft.toLocaleString()} sq.ft</p>
+        </div>
+      `;
+    });
   })
-  .catch(err => {
-    debug("ERROR: " + err.message);
-  });
+  .catch(err => console.error(err));
 </script>
 
 	
-
-	
-	
-	</body>
+		
+</body>
 </html>
