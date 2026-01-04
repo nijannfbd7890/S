@@ -1,0 +1,323 @@
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta charset="UTF-8">
+	<title>Booking Status Report</title>
+
+	<style>
+	:root {
+	  --bg: #f5f7fb;
+	  --card: #ffffff;
+	  --text-dark: #0f172a;
+	  --text-muted: #64748b;
+	  --primary: #4f8cff;
+	  --success: #16a34a;
+	  --shadow: 0 20px 35px rgba(15,23,42,0.08);
+	}
+
+	* {
+	  font-family: "Segoe UI", system-ui, sans-serif;
+	  box-sizing: border-box;
+	}
+
+	body {
+	  background: var(--bg);
+	  margin: 0;
+	  padding: 32px;
+	  color: var(--text-dark);
+	}
+
+	.container {
+	  max-width: 1300px;
+	  margin: auto;
+	}
+
+	/* HEADER */
+	.header {
+	  margin-bottom: 30px;
+	}
+
+	.header h1 {
+	  font-size: 36px;
+	  font-weight: 700;
+	  margin: 0;
+	}
+
+	.header p {
+	  margin: 6px 0 0;
+	  color: var(--text-muted);
+	  font-size: 15px;
+	}
+
+	/* SUMMARY GRID */
+	.summary {
+	  display: grid;
+	  grid-template-columns: repeat(4, 1fr);
+	  gap: 24px;
+	  margin-bottom: 35px;
+	}
+
+	/* SUMMARY CARD */
+	.card {
+	  background: var(--card);
+	  border-radius: 18px;
+	  padding: 26px;
+	  box-shadow: var(--shadow);
+	  position: relative;
+	  overflow: hidden;
+	}
+
+	.card::after {
+	  content: "";
+	  position: absolute;
+	  top: 0;
+	  right: 0;
+	  width: 90px;
+	  height: 90px;
+	  background: linear-gradient(135deg, var(--primary), transparent);
+	  opacity: 0.15;
+	  border-bottom-left-radius: 100%;
+	}
+
+	.card-title {
+	  font-size: 14px;
+	  font-weight: 600;
+	  color: var(--text-muted);
+	  text-transform: uppercase;
+	  letter-spacing: 0.6px;
+	}
+
+	.card-value {
+	  font-size: 40px;
+	  font-weight: 700;
+	  margin: 12px 0 6px;
+	}
+
+	.card-sub {
+	  font-size: 14px;
+	  color: var(--text-muted);
+	}
+
+	/* ICON */
+	.card-icon {
+	  position: absolute;
+	  top: 22px;
+	  right: 22px;
+	  font-size: 26px;
+	  opacity: 0.25;
+	}
+
+	/* MONTH GRID */
+	.Months {
+	  display: grid;
+	  grid-template-columns: repeat(6, 1fr); /* 6 per row */
+	  gap: 12px;
+	  margin-top: 10px;
+	}
+
+
+	/* MONTH CARD */
+	.location {
+	  height: 90px;              /* compact */
+	  padding: 14px;
+	  border-radius: 14px;
+	  color: #fff;
+	  position: relative;
+	  box-shadow: 0 10px 18px rgba(0,0,0,0.12);
+	}
+
+
+	.location h3 {
+	  margin: 0;
+	  font-size: 13px;
+	  font-weight: 600;
+	}
+
+	.location h1 {
+	  margin: 6px 0 2px;
+	  font-size: 22px;
+	  font-weight: 700;
+	}
+
+	.location p {
+	  margin: 0;
+	  font-size: 11px;
+	  opacity: 0.9;
+	}
+
+	.location span {
+	  position: absolute;
+	  right: 10px;
+	  bottom: 6px;
+	  font-size: 26px;
+	  font-weight: 700;
+	  opacity: 0.18;
+	}
+
+
+	
+
+	/* COLORS */
+	.blue   { background: linear-gradient(135deg, #4f8cff, #2f6be5); }
+	.orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+	.pink   { background: linear-gradient(135deg, #ec4899, #db2777); }
+	.green  { background: linear-gradient(135deg, #10b981, #059669); }
+
+	/* RESPONSIVE */
+	@media (max-width: 1000px) {
+	  .summary, .Months {
+		grid-template-columns: repeat(2, 1fr);
+	  }
+	}
+
+	@media (max-width: 520px) {
+	  .summary, .Months {
+		grid-template-columns: 1fr;
+	  }
+	}
+	</style>
+	</head>
+
+	<body>
+
+	<div class="container">
+
+	  <!-- HEADER -->
+	  <div class="header">
+		
+		<h1>Booking Status Report</h1>
+		<p>Executive overview • Yearly booking performance</p>
+	  </div>
+	  
+	  
+
+
+	  <!-- SUMMARY -->
+	  <div class="summary">
+		<div class="card">
+		  <div class="card-icon">👥</div>
+		  <div class="card-title">Total Teams</div>
+		  <div class="card-value">12</div>
+		  <div class="card-sub">Active teams</div>
+		</div>
+
+		<div class="card">
+		  <div class="card-icon">📊</div>
+		  <div class="card-title">Total Transactions</div>
+		  <div class="card-value" id="totalTransactions">0</div>
+		  <div class="card-sub">All bookings</div>
+		</div>
+
+		<div class="card">
+		  <div class="card-icon">📐</div>
+		  <div class="card-title">Total Sq.ft</div>
+		  <div class="card-value" id="totalSqft">0</div>
+		  <div class="card-sub">Combined area</div>
+		</div>
+
+		<div class="card">
+		  <div class="card-icon">🗓️</div>
+		  <div class="card-title">Months</div>
+		  <div class="card-value">12</div>
+		  <div class="card-sub">Jan – Dec</div>
+		</div>
+	  </div>
+
+	  <!-- MONTHS -->
+	  <div class="Months" id="monthCards"></div>
+
+	</div>
+	
+
+	
+	
+	<script>
+const months = [
+  ["January",24,29819,42],
+  ["February",18,21450,31],
+  ["March",12,15832,18],
+  ["April",20,28437,29],
+  ["May",16,22340,25],
+  ["June",22,30120,35],
+  ["July",19,26780,30],
+  ["August",14,19840,22],
+  ["September",21,28990,33],
+  ["October",26,33210,40],
+  ["November",17,24100,28],
+  ["December",23,35437,50]
+];
+
+const colors = ["blue","orange","pink","green"];
+const container = document.getElementById("monthCards");
+
+container.innerHTML = "";
+
+months.forEach((m,i)=>{
+  container.innerHTML += `
+    <div class="location ${colors[i % 4]}">
+      <h3>${m[0]}</h3>
+      <h1>${m[1]}</h1>
+      <p>${m[2].toLocaleString()} sq.ft</p>
+      <span>${m[3]}%</span>
+    </div>
+  `;
+});
+</script>
+
+
+
+</body>
+
+<script>
+(async function () {
+  try {
+    const response = await fetch("Yearly_Booking_Report.csv");
+    if (!response.ok) {
+      throw new Error("CSV file not found");
+    }
+
+    const text = await response.text();
+    const lines = text.trim().split(/\r?\n/);
+
+    // Read headers safely
+    const headers = lines[0]
+      .replace(/\uFEFF/g, "")
+      .split(",")
+      .map(h => h.trim());
+
+    console.log("CSV Headers:", headers);
+
+    const bookingDateIndex = headers.indexOf("BOOKING DATE");
+    const sqftIndex = headers.indexOf("ACTUAL TOTAL SQ-FT");
+
+    if (bookingDateIndex === -1 || sqftIndex === -1) {
+      throw new Error("Required columns not found in CSV");
+    }
+
+    let totalTransactions = 0;
+    let totalSqft = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+
+      const cols = lines[i].split(",").map(c => c.trim());
+
+      if (cols[bookingDateIndex]) totalTransactions++;
+      if (cols[sqftIndex]) {
+        totalSqft += Number(cols[sqftIndex]) || 0;
+      }
+    }
+
+    document.getElementById("totalTransactions").textContent =
+      totalTransactions;
+
+    document.getElementById("totalSqft").textContent =
+      totalSqft.toLocaleString();
+
+  } catch (err) {
+    console.error("CSV READ ERROR:", err);
+  }
+})();
+</script>
+
+</html>
