@@ -1,331 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Team Performance Dashboard (Last 5 Years)</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Performance Dashboard</title>
 
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- DataTables -->
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
 
-<!-- PapaParse -->
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-<!-- PivotTable.js -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pivottable@2.23.0/dist/pivot.css">
-<script src="https://cdn.jsdelivr.net/npm/pivottable@2.23.0/dist/pivot.min.js"></script>
-
-<style>
-    :root {
-        --bg: #f5f6f8;
-        --text-dark: #1a1d21;
-        --text-med: #555;
-        --card-bg: #ffffff;
-        --border: #e0e3e8;
-        --blue: #2a5bd7;
-        --green: #2ea06f;
-        --red: #d13b3b;
-    }
-
-    body {
-        margin: 0;
-        font-family: "Inter", sans-serif;
-        background: var(--bg);
-        color: var(--text-dark);
-    }
-
-    header {
-        background: white;
-        padding: 30px 45px;
-        border-bottom: 1px solid var(--border);
-        font-size: 28px;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-        animation: fadeIn 0.8s ease;
-    }
-
-    .container {
-        padding: 35px;
-        animation: slideUp 0.8s ease;
-    }
-
-    /* Filters */
-    .filters {
-        margin-bottom: 25px;
-    }
-
-    select {
-        padding: 10px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: white;
-        font-size: 15px;
-        transition: 0.25s ease;
-    }
-
-    select:hover {
-        border-color: #b8bcc4;
-    }
-
-    /* KPI Cards */
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-        gap: 22px;
-        margin-bottom: 40px;
-    }
-
-    .kpi-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        padding: 22px 24px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.04);
-    }
-
-    .kpi-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-    }
-
-    .kpi-title {
-        font-size: 14px;
-        color: var(--text-med);
-        margin-bottom: 6px;
-        font-weight: 500;
-    }
-
-    .kpi-value {
-        font-size: 30px;
-        font-weight: 700;
-    }
-
-    /* Charts */
-    .chart-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-        gap: 30px;
-        margin-bottom: 40px;
-    }
-
-    .chart-card {
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.04);
-        animation: fadeIn 1s ease;
-    }
-
-    /* Pivot Table */
-    #pivot-table {
-        background: white;
-        border: 1px solid var(--border);
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-    }
-
-    /* Animations */
-    @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
-    @keyframes slideUp { from {opacity: 0; transform: translateY(30px);} to {opacity: 1; transform: translateY(0);} }
-</style>
-
+    <style>
+        body { background:#f5f7fa; padding:20px; }
+        .card { border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+        .dashboard-title { font-size:28px; font-weight:bold; margin-bottom:20px; }
+        table.dataTable th { background:#e1e7ef; }
+    </style>
 </head>
 <body>
 
-<header>Team Performance Dashboard (Last 5 Years)</header>
-
 <div class="container">
+    <div class="dashboard-title">📊 Performance Dashboard</div>
 
-    <!-- Filters -->
-    <div class="filters">
-        <label><b>Year:</b></label><br>
-        <select id="yearFilter"></select>
-    </div>
-
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-title">Total Deals</div><div id="kpiTotalDeals" class="kpi-value">0</div></div>
-        <div class="kpi-card"><div class="kpi-title">Success Rate</div><div id="kpiSuccessRate" class="kpi-value">0%</div></div>
-        <div class="kpi-card"><div class="kpi-title">Total SQ-FT</div><div id="kpiSqft" class="kpi-value">0</div></div>
-        <div class="kpi-card"><div class="kpi-title">Total Rent</div><div id="kpiRent" class="kpi-value">$0</div></div>
+    <!-- Data Table -->
+    <div class="card p-4 mb-4">
+        <h4>Overall Summary Table</h4>
+        <table id="summary" class="table table-striped" style="width:100%">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
     </div>
 
     <!-- Charts -->
-    <div class="chart-grid">
-        <div class="chart-card"><canvas id="barSuccess"></canvas></div>
-        <div class="chart-card"><canvas id="sqftTrend"></canvas></div>
-        <div class="chart-card" style="grid-column: span 2;"><canvas id="successRateChart"></canvas></div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card p-4 mb-4">
+                <h5>Cash vs Loan Count</h5>
+                <canvas id="countChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4 mb-4">
+                <h5>Total SQ-FT by Year</h5>
+                <canvas id="sqftChart"></canvas>
+            </div>
+        </div>
     </div>
-
-    <!-- Pivot Table -->
-    <div id="pivot-table"></div>
 
 </div>
 
+<!-- JS Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
-const CSV_URL = "https://nijannfbd7890.github.io/S/Pivot.csv";
+// Load CSV from GitHub
+Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
+    download: true,
+    header: true,
+    dynamicTyping: true,
+    complete: function(results) {
 
-let rawData = [];
-let charts = {};
+        const data = results.data;
 
-function loadCSV() {
-    Papa.parse(CSV_URL, {
-        download: true,
-        header: true,
-        dynamicTyping: true,
-        complete: (result) => {
-            rawData = result.data.filter(r => r.Year);
-            populateYearFilter();
-            updateDashboard();
-            loadPivotTable();
-        }
-    });
-}
+        // Build table headers
+        const columns = Object.keys(data[0]);
+        let thead = "<tr>";
+        columns.forEach(c => { thead += `<th>${c}</th>`; });
+        thead += "</tr>";
+        document.querySelector("#summary thead").innerHTML = thead;
 
-function populateYearFilter() {
-    const yearSel = document.getElementById("yearFilter");
-    const years = [...new Set(rawData.map(d => d.Year))].sort().reverse();
+        // Build table rows
+        let tbody = "";
+        data.forEach(row => {
+            tbody += "<tr>";
+            columns.forEach(c => tbody += `<td>${row[c]}</td>`);
+            tbody += "</tr>";
+        });
+        document.querySelector("#summary tbody").innerHTML = tbody;
 
-    yearSel.innerHTML = `<option value="All">All Years</option>`;
-    years.forEach(y => { yearSel.innerHTML += `<option value="${y}">${y}</option>`; });
+        // Activate DataTable
+        $('#summary').DataTable();
 
-    yearSel.onchange = updateDashboard;
-}
+        // Extract Chart Data
+        const years = data.map(r => r['Row Labels']);
+        const cashCount = data.map(r => r['Cash Count']);
+        const loanCount = data.map(r => r['Loan Count']);
+        const totalSqft = data.map(r => r['Total SQ-FT']);
 
-function filteredData() {
-    const year = document.getElementById("yearFilter").value;
-    return year === "All" ? rawData : rawData.filter(d => d.Year == year);
-}
+        // CHART 1 - Cash vs Loan Count
+        new Chart(document.getElementById('countChart'), {
+            type: 'bar',
+            data: {
+                labels: years,
+                datasets: [
+                    { label: "Cash Count", data: cashCount },
+                    { label: "Loan Count", data: loanCount }
+                ]
+            }
+        });
 
-function animateValue(el, start, end, duration = 700) {
-    let startTime = null;
-    function step(ts) {
-        if (!startTime) startTime = ts;
-        const progress = Math.min((ts - startTime) / duration, 1);
-        el.textContent = Math.floor(progress * (end - start) + start).toLocaleString();
-        if (progress < 1) requestAnimationFrame(step);
+        // CHART 2 - Total SQ-FT by Year
+        new Chart(document.getElementById('sqftChart'), {
+            type: 'line',
+            data: {
+                labels: years,
+                datasets: [
+                    { label: "Total SQ-FT", data: totalSqft }
+                ]
+            }
+        });
     }
-    requestAnimationFrame(step);
-}
-
-function updateDashboard() {
-    const data = filteredData();
-
-    const totalDeals = data.length;
-    const success = data.filter(d => d.Status === "Success").length;
-    const successRate = totalDeals ? ((success / totalDeals) * 100).toFixed(1) : 0;
-    const totalSqft = data.reduce((sum, r) => sum + (r.SQFT || 0), 0);
-    const totalRent = data.reduce((sum, r) => sum + (r.Rent || 0), 0);
-
-    animateValue(document.getElementById("kpiTotalDeals"), 0, totalDeals);
-    document.getElementById("kpiSuccessRate").textContent = successRate + "%";
-    animateValue(document.getElementById("kpiSqft"), 0, totalSqft);
-    animateValue(document.getElementById("kpiRent"), 0, totalRent);
-
-    updateBarChart(data);
-    updateSqftTrend(data);
-    updateSuccessRateChart();
-}
-
-function updateBarChart(data) {
-    const success = data.filter(d => d.Status === "Success").length;
-    const fail = data.filter(d => d.Status !== "Success").length;
-
-    const ctx = document.getElementById("barSuccess");
-
-    if (charts.bar) charts.bar.destroy();
-
-    charts.bar = new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: ["Success", "UnSuccess"],
-            datasets: [{
-                label: "Deals",
-                data: [success, fail],
-                backgroundColor: [ "#2ea06f", "#d13b3b" ]
-            }]
-        },
-        options: {
-            animation: { duration: 900 },
-            responsive: true,
-            plugins: { legend: { display: true } }
-        }
-    });
-}
-
-function updateSqftTrend(data) {
-    const yearly = {};
-    data.forEach(r => yearly[r.Year] = (yearly[r.Year] || 0) + (r.SQFT || 0));
-
-    const years = Object.keys(yearly).sort();
-    const values = years.map(y => yearly[y]);
-
-    const ctx = document.getElementById("sqftTrend");
-    if (charts.sqft) charts.sqft.destroy();
-
-    charts.sqft = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: years,
-            datasets: [{
-                label: "Total SQ-FT",
-                data: values,
-                borderColor: "#2a5bd7",
-                borderWidth: 3,
-                tension: 0.3
-            }]
-        },
-        options: { animation: { duration: 900 } }
-    });
-}
-
-function updateSuccessRateChart() {
-    const yrGroups = {};
-    rawData.forEach(r => {
-        yrGroups[r.Year] = yrGroups[r.Year] || { total: 0, success: 0 };
-        yrGroups[r.Year].total++;
-        if (r.Status === "Success") yrGroups[r.Year].success++;
-    });
-
-    const years = Object.keys(yrGroups).sort();
-    const rates = years.map(y => ((yrGroups[y].success / yrGroups[y].total) * 100).toFixed(1));
-
-    const ctx = document.getElementById("successRateChart");
-    if (charts.rate) charts.rate.destroy();
-
-    charts.rate = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: years,
-            datasets: [{
-                label: "Success Rate (%)",
-                data: rates,
-                borderColor: "#2ea06f",
-                borderWidth: 3,
-                tension: 0.3
-            }]
-        },
-        options: {
-            animation: { duration: 900 }
-        }
-    });
-}
-
-function loadPivotTable() {
-    $("#pivot-table").pivotUI(rawData, {
-        rows: ["Year"],
-        cols: ["Status"],
-        aggregatorName: "Count"
-    });
-}
-
-loadCSV();
+});
 </script>
 
 </body>
