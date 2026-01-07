@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Source Wise – Year Comparison</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #eef3f9;
+    padding: 20px 30px;
+  }
+  h2 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .table-container {
+    max-width: 100%;
+    overflow-x: auto;
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    background: white;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 1500px; }
+  thead th { position: sticky; top: 0; z-index: 3; text-align: center; }
+
+  thead tr:first-child th { background: #dfe6f2; font-size: 15px; padding: 10px; }
+  thead tr:nth-child(2) th { background: #eef2f9; padding: 6px; font-size: 14px; }
+  thead tr:nth-child(3) th { background: #f7f9fc; padding: 6px; font-size: 13px; }
+
+  th { font-weight: 700; color: #1e293b; border-bottom: 1px solid #d6d9e0; }
+  td {
+    text-align: center; padding: 8px 4px; font-size: 13px;
+    color: #334155; border-bottom: 1px solid #eef0f3;
+  }
+
+  td:nth-child(2) { text-align: left; font-weight: 600; white-space: nowrap; }
+  tbody tr:hover { background: #f1f6ff; transition: 0.2s; }
+  tbody tr:nth-child(even) { background: #fafbfd; }
+  .grand-total {
+    background: #d7efff !important;
+    font-weight: 800; font-size: 14px;
+    border-top: 2px solid #000;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>🌍 Source Wise – Year Comparison</h2>
+
+<div class="table-container">
+<table>
+<thead>
+  <tr>
+    <th rowspan="3">#</th>
+    <th rowspan="3">Source</th>
+
+    <th colspan="4">2025</th>
+    <th colspan="4">2024</th>
+    <th colspan="4">2023</th>
+    <th colspan="4">2022</th>
+    <th colspan="4">2021</th>
+  </tr>
+
+  <tr>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+  </tr>
+
+  <tr>
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+  </tr>
+</thead>
+
+<tbody id="pivotBody"></tbody>
+<tbody id="totalRow"></tbody>
+
+</table>
+</div>
+
+<h2>📊 Year Summary – Success vs Unsuccess</h2>
+<canvas id="yearChart" height="140"></canvas>
+
+<script>
+
+Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+
+    complete: function(res) {
+
+        const data = res.data;
+        const norm = s => String(s).toLowerCase().trim();
+
+        const headers = Object.keys(data[0]);
+
+        // COLUMN FINDERS (IMPORTANT)
+        const COL_SOURCE  = headers.find(h => norm(h) === "keyword for source");
+        const COL_YEAR    = headers.find(h => norm(h) === "year");
+        const COL_SQFT    = headers.find(h => norm(h) === "actual total sq-ft");
+        const COL_STATUS  = headers.find(h => norm(h) === "daily updation");
+
+        const YEARS = ["2025", "2024", "2023", "2022", "2021"];
+
+        // UNIQUE SOURCE LIST
+        const sources = [...new Set(data.map(r => r[COL_SOURCE]).filter(Boolean))];
+
+        const result = {};
+        const totals = {};
+
+        YEARS.forEach(year => {
+            totals[year] = {
+                successCount: 0,
+                successSqft: 0,
+                unsuccessCount: 0,
+                unsuccessSqft: 0
+            };
+        });
+
+        sources.forEach(src => {
+            result[src] = {};
+            YEARS.forEach(year => {
+                result[src][year] = {
+                    successCount: 0,
+                    successSqft: 0,
+                    unsuccessCount: 0,
+                    unsuccessSqft: 0
+                };
+            });
+        });
+
+        function getStatus(row) {
+            let s = norm(row[COL_STATUS]);
+            if (s === "success") return "success";
+            if (s === "unsuccess") return "unsuccess";
+            return "none";
+        }
+
+        // BUILD PIVOT DATA
+        data.forEach(row => {
+            const src = row[COL_SOURCE];
+            const year = String(row[COL_YEAR]).trim();
+            const sqft = Math.round(Number(row[COL_SQFT]) || 0);
+
+            if (!src || !YEARS.includes(year)) return;
+
+            const status = getStatus(row);
+
+            if (status === "success") {
+                result[src][year].successCount++;
+                result[src][year].successSqft += sqft;
+                totals[year].successCount++;
+                totals[year].successSqft += sqft;
+            }
+
+            if (status === "unsuccess") {
+                result[src][year].unsuccessCount++;
+                result[src][year].unsuccessSqft += sqft;
+                totals[year].unsuccessCount++;
+                totals[year].unsuccessSqft += sqft;
+            }
+        });
+
+        // TABLE BODY
+        const body = document.getElementById("pivotBody");
+        let i = 1;
+
+        sources.forEach(src => {
+            let tr = `<tr>
+                <td>${i++}</td>
+                <td>${src}</td>`;
+
+            YEARS.forEach(year => {
+                const r = result[src][year];
+                tr += `
+                <td>${r.successCount}</td>
+                <td>${r.successSqft}</td>
+                <td>${r.unsuccessCount}</td>
+                <td>${r.unsuccessSqft}</td>`;
+            });
+
+            tr += "</tr>";
+            body.innerHTML += tr;
+        });
+
+        // GRAND TOTAL ROW
+        let totalHTML = `<tr class="grand-total">
+            <td></td><td>Grand Total</td>`;
+
+        YEARS.forEach(year => {
+            const t = totals[year];
+            totalHTML += `
+                <td>${t.successCount}</td>
+                <td>${t.successSqft}</td>
+                <td>${t.unsuccessCount}</td>
+                <td>${t.unsuccessSqft}</td>`;
+        });
+
+        totalHTML += "</tr>";
+        document.getElementById("totalRow").innerHTML = totalHTML;
+
+        // YEAR SUMMARY CHART
+        const ctx = document.getElementById("yearChart").getContext("2d");
+
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: YEARS,
+                datasets: [
+                    {
+                        label: "Success",
+                        data: YEARS.map(y => totals[y].successSqft),
+                        backgroundColor: "#4CAF50"
+                    },
+                    {
+                        label: "Unsuccess",
+                        data: YEARS.map(y => totals[y].unsuccessSqft),
+                        backgroundColor: "#FF5252"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: "top" },
+                    datalabels: {
+                        anchor: "end",
+                        align: "top",
+                        color: "#000",
+                        font: { weight: "bold", size: 14 },
+                        formatter: function(value) {
+                            return value.toLocaleString();
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString() }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+
+    }
+});
+</script>
+</body>
+</html>
