@@ -1,1084 +1,193 @@
-	<!DOCTYPE html>
-	<html lang="en">
-	<head>
-	<meta charset="UTF-8">
-	<title>Booking Status Report</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Booking Status Reports</title>
 
-	<style>
-	:root {
-	  --bg: #f5f7fb;
-	  --card: #ffffff;
-	  --text-dark: #0f172a;
-	  --text-muted: #64748b;
-	  --primary: #4f8cff;
-	  --success: #16a34a;
-	  --shadow: 0 20px 35px rgba(15,23,42,0.08);
-	}
+<style>
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #f5f7fb;
+    margin: 0;
+    padding: 40px;
+  }
 
-	* {
-	  font-family: "Segoe UI", system-ui, sans-serif;
-	  box-sizing: border-box;
-	}
+  .container {
+    max-width: 900px;
+    margin: auto;
+  }
 
-	body {
-	  background: var(--bg);
-	  margin: 0;
-	  padding: 32px;
-	  color: var(--text-dark);
-	}
+  h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    color: #0f172a;
+  }
 
-	.container {
-	  max-width: 1300px;
-	  margin: auto;
-	}
+  p.subtitle {
+    color: #64748b;
+    margin-bottom: 40px;
+    font-size: 15px;
+  }
 
-	/* HEADER */
-	.header {
-	  margin-bottom: 30px;
-	}
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
 
-	.header h1 {
-	  font-size: 36px;
-	  font-weight: 700;
-	  margin: 0;
-	}
+  .card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 20px 35px rgba(15,23,42,0.08);
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+  }
 
-	.header p {
-	  margin: 6px 0 0;
-	  color: var(--text-muted);
-	  font-size: 15px;
-	}
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 28px 45px rgba(15,23,42,0.12);
+  }
 
-	/* SUMMARY GRID */
-	.summary {
-	  display: grid;
-	  grid-template-columns: repeat(4, 1fr);
-	  gap: 24px;
-	  margin-bottom: 35px;
-	}
+  .icon {
+    font-size: 42px;
+    margin-bottom: 14px;
+  }
 
-	/* SUMMARY CARD */
-	.card {
-	  background: var(--card);
-	  border-radius: 18px;
-	  padding: 18px;
-	  box-shadow: var(--shadow);
-	  position: relative;
-	  overflow: hidden;
-	}
+  .card h2 {
+    font-size: 22px;
+    margin: 0 0 8px;
+    color: #0f172a;
+  }
 
-	.card::after {
-	  content: "";
-	  position: absolute;
-	  top: 0;
-	  right: 0;
-	  width: 90px;
-	  height: 90px;
-	  background: linear-gradient(135deg, var(--primary), transparent);
-	  opacity: 0.15;
-	  border-bottom-left-radius: 100%;
-	}
+  .card p {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+  }
 
-	.card-title {
-	  font-size: 12px;
-	  font-weight: 600;
-	  color: var(--text-muted);
-	  text-transform: uppercase;
-	  letter-spacing: 0.6px;
-	}
+  .team {
+    border-left: 6px solid #4f8cff;
+  }
 
-	.card-value {
-	  font-size: 40px;
-	  font-weight: 700;
-	  margin: 12px 0 6px;
-	}
-
-	.card-sub {
-	  font-size: 14px;
-	  color: var(--text-muted);
-	}
-
-	/* ICON */
-	.card-icon {
-	  position: absolute;
-	  top: 22px;
-	  right: 22px;
-	  font-size: 26px;
-	  opacity: 0.25;
-	}
-
-	/* MONTH GRID */
-	.Months {
-	  display: grid;
-	  grid-template-columns: repeat(6, 1fr); /* 6 per row */
-	  gap: 12px;
-	  margin-top: 10px;
-	}
-
-
-	/* MONTH CARD */
-	.location {
-  height: 125px;              /* ⬅ MORE SPACE */
-  padding: 14px;
-  border-radius: 14px;
-  color: #fff;
-  position: relative;
-  box-shadow: 0 10px 18px rgba(0,0,0,0.12);
-  z-index: 1;
+  .staff {
+  border-left: 6px solid #22c55e;
 }
 
 
+  .badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
 
-	.location h3 {
-	  margin: 0;
-	  font-size: 13px;
-	  font-weight: 600;
-	}
+  .live {
+    background: #dcfce7;
+    color: #166534;
+  }
 
-	.location h1 {
-	  margin: 6px 0 2px;
-	  font-size: 22px;
-	  font-weight: 700;
-	}
+  .coming {
+    background: #e5e7eb;
+    color: #374151;
+  }
 
-	.location p {
-  margin: 0;
-  font-size: 11px;
-  opacity: 0.9;
-  margin-bottom: 26px; /* ⬅ PUSH CONTENT DOWN */
+  @media (max-width: 720px) {
+    .cards {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .summary {
+  border-left: 6px solid #f59e0b; /* Amber */
 }
 
-
-	
-	.month-watermark {
-  position: absolute;
-  right: 10px;
-  bottom: 6px;
-  font-size: 20px;
-  font-weight: 700;
-  opacity: 0.03;
-  z-index: 0; /* 👈 FORCE BEHIND */
-  pointer-events: none;
+.region {
+  border-left: 6px solid #6366f1; /* Indigo */
 }
 
+</style>
+</head>
 
-	
+<body>
 
-	/* COLORS */
-	.blue   { background: linear-gradient(135deg, #4f8cff, #2f6be5); }
-	.orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
-	.pink   { background: linear-gradient(135deg, #ec4899, #db2777); }
-	.green  { background: linear-gradient(135deg, #10b981, #059669); }
+<div class="container">
+  <h1>Booking Status Reports</h1>
+  <p class="subtitle">
+    Choose the type of report you want to view
+  </p>
 
-	/* RESPONSIVE */
-	@media (max-width: 1000px) {
-	  .summary, .Months {
-		grid-template-columns: repeat(2, 1fr);
-	  }
-	}
+  <div class="cards">
 
-	@media (max-width: 520px) {
-	  .summary, .Months {
-		grid-template-columns: 1fr;
-	  }
-	}
-	
-	/* ===== TABLE COLUMN COLOR STYLES ===== */
+    <!-- TEAM WISE -->
+    <div class="card team" onclick="openTeamReport()">
+      <span class="badge live">LIVE</span>
+      <div class="icon">👥</div>
+      <h2>Team Wise Report</h2>
+      <p>
+        View booking performance across teams with
+        monthly trends, live vs cancel analysis,
+        charts and PDF export.
+      </p>
+    </div>
 
-/* Overall (neutral) */
-.col-overall {
-  background: #f8fafc;
-}
-
-/* Overall Live (blue like GST) */
-.col-live {
-  background: #f0f6ff;
-}
-.col-live b,
-.col-live small {
-  color: #2563eb; /* blue */
-}
-
-/* Cancel (orange/pink like ECR/Nellikuppam) */
-.col-cancel {
-  background: #fff7ed;
-}
-.col-cancel b,
-.col-cancel small {
-  color: #ea580c; /* orange */
-}
-
-.col-live,
-.col-cancel {
-  border-radius: 6px;
-}
-
-/* STATUS PILLS */
-.status-pill {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-pill.excellent {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-pill.good {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.status-pill.average {
-  background: #fee2e2;
-  color: #991b1b;
-}
-.month-live-cancel {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.18); /* contrast layer */
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  z-index: 2;
-  position: relative;
-}
-
-.month-live-cancel .live {
-  color: #e0f2fe; /* light blue */
-}
-
-.month-live-cancel .cancel {
-  color: #ffedd5; /* light orange */
-}
-.month-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  position: absolute;        /* ⬅ KEY CHANGE */
-  left: 10px;
-  right: 10px;
-  bottom: 8px;              /* ⬅ STAYS INSIDE CARD */
-
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(4px);
-  border-radius: 10px;
-
-  font-size: 13px;
-  font-weight: 700;
-  z-index: 5;
-}
-
-
-
-.month-stats .live {
-  color: #0f172a; /* dark slate */
-}
-
-.month-stats .cancel {
-  color: #7c2d12; /* strong brown-orange */
-}
-
-.month-stats .percent {
-  color: #0f172a;
-  font-weight: 800;
-  font-size: 13px;
-  background: rgba(255,255,255,0.6);
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-/* ===== PERCENTAGE BADGE (TOP RIGHT) ===== */
-.month-percent {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-
-  font-size: 25px;
-  font-weight: 800;
-  color: rgba(255,255,255,0.45);
-
-  z-index: 3;
-  pointer-events: none;
-}
-
-	</style>
-	</head>
-
-	<body>
-
-	<div class="container">
-
-	  <!-- HEADER -->
-	  <div class="header">
-		
-		<h1>Booking Status Report (Live, Agreement, Registration & Cancel) - Team wise</h1>
-		<p>Executive overview • Yearly booking performance</p>
-		<div style="margin-top:12px;">
-  <a href="month-report.html" target="_blank"
-     style="
-       font-size:14px;
-       font-weight:600;
-       color:#4f8cff;
-       text-decoration:none;
-     ">
-    📄 View Month-wise Team Report (Jan–Dec)
-  </a>
+    <!-- STAFF WISE -->
+    <!-- <div class="card staff" onclick="openStaffReport()"> -->
+      <!-- <span class="badge coming">COMING SOON</span> -->
+	  <div class="card staff" onclick="openStaffReport()">
+	 <span class="badge live">LIVE</span>
+      <div class="icon">🧑‍💼</div>
+      <h2>Staff Wise Report</h2>
+      <p>
+        Individual staff performance report with
+        booking count, SQ-FT contribution and status
+        analysis.
+      </p>
+    </div>
+	<!-- MONTHLY SUMMARY REPORT -->
+<div class="card summary" onclick="openYearwiseReport()">
+  <span class="badge live">LIVE</span>
+  <div class="icon">📊</div>
+  <h2>Yearly Summary Report</h2>
+  <p>
+    View monthly booking summary, trend comparison,
+    revenue indicators, and monthly performance charts.
+  </p>
 </div>
 
-	  </div>
-	  
-	  
+<!-- REGION WISE REPORT -->
+<div class="card region" onclick="opensourceReport()">
+  <span class="badge live">LIVE</span>
+  <div class="icon">📥</div>
+  <h2>Source Wise Report</h2>
 
-
-	  <!-- SUMMARY -->
-	  <div class="summary">
-		<div class="card">
-		  <div class="card-icon">👥</div>
-		  <div class="card-title">Total Teams</div>
-		  <div class="card-value">12</div>
-		  <div class="card-sub">Active teams</div>
-		</div>
-
-		<div class="card">
-		  <div class="card-icon">📊</div>
-		  <div class="card-title">Total Transactions</div>
-		  <div class="card-value" id="totalTransactions">0</div>		 
-		  <div class="card-sub">All bookings</div>
-		</div>
-
-		<div class="card">
-		  <div class="card-icon">📐</div>
-		  <div class="card-title">Total Sq.ft</div>
-		  <div class="card-value" id="totalSqft">0</div>
-		  <div class="card-sub">Combined area</div>
-		</div>
-
-		<div class="card">
-		  <div class="card-icon">🗓️</div>
-		  <div class="card-title">Months</div>
-		  <div class="card-value">12</div>
-		  <div class="card-sub">Jan – Dec</div>
-		</div>
-	  </div>
-
-	  <!-- MONTHS -->
-	  <div class="Months" id="monthCards"></div>
-	  
-	<!-- FILTER + TABLE ROW -->
-	<div style="
-	  display:grid;
-	  grid-template-columns: 360px 1fr;  /* ⬅ slimmer left column */
-	  gap:24px;
-	  margin-top:30px;
-	  align-items:start;
-	">
-
-
-  <!-- FILTER CARD -->
-  <div style="display:flex; flex-direction:column; gap:18px;">
-  <div class="card">
-    <div class="card-title">Filter by Team</div>
-
-    <select id="teamFilter" style="
-      width:100%;
-      margin-top:8px;
-      padding:8px 12px;
-      border-radius:8px;
-      border:1px solid #e5e7eb;
-      font-size:13px;
-      background:#fff;
-    ">
-      <option value="All Teams">All Teams</option>
-      <option value="Ashok Sir">Ashok Sir</option>
-      <option value="Gopi Sir">Gopi Sir</option>
-      <!-- <option value="Gopi Sir">Gistak</option> -->
-      <option value="Kumaresan Sir">Kumaresan Sir</option>
-      <option value="Latha Mam & Ayyappan Sir">Latha Mam & Ayyappan Sir</option>
-      <option value="Prabhakaran Sir">Prabhakaran Sir</option>
-      <option value="Rajiv Sir">Rajiv Sir</option>
-      <option value="Ranjith Sir">Ranjith Sir</option>
-      <option value="Sankar Sir">Sankar Sir</option>
-      <option value="Selvakumar Sir">Selvakumar Sir</option>
-      <option value="Senthil Sir">Senthil Sir</option>
-      <option value="Suriya Sir">Suriya Sir</option>
-      <option value="Thangadurai Sir">Thangadurai Sir</option>
-    </select>
-  </div>
-  
-  <!-- CHART CARD -->
-<div class="card" style="margin-top:24px;">
-  
-  <div class="card-title" style="margin-bottom:6px;">Booking Distribution</div>
-
-  <!-- <p id="chartTotalText" style="margin:8px 0 12px; color:#64748b;"> -->
-    <!-- Total: 0 transactions -->
-  <!-- </p> -->
-  
-  <!-- <p id="chartTotalText" -->
-   <!-- style=" -->
-     <!-- text-align:center; -->
-     <!-- font-size:13px; -->
-     <!-- color:#64748b; -->
-     <!-- margin:4px 0 10px; -->
-   <!-- "> -->
-<!-- </p> -->
-
-
-
-  <div style="display:flex; justify-content:center; align-items:center;">
-  <canvas id="teamStatusChart" width="220" height="220"></canvas>
-  
-  </div>
-  
-</div>
-<div style="text-align:center; margin-top:12px;">
-  <button id="downloadBtn" style="
-    background:#4f8cff;
-    color:#ffffff;
-    font-weight:600;
-    border:none;
-    border-radius:8px;
-    padding:8px 16px;
-    cursor:pointer;
-    font-size:13px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.15);
-  ">
-    ⬇️ Download PDF
-  </button>
+  <p>
+    Analyze booking performance across Source wise with
+    heatmaps, distribution comparison, and growth insights.
+  </p>
 </div>
 
   </div>
-  
-  
-  
-  
-
-
-  <!-- TABLE CARD -->
-  <div class="card" style="padding:22px;">
-  <!-- <div class="card"> -->
-    <div class="card-title">Team Performance Details</div>
-
-    <table style="width:100%; border-collapse:collapse; margin-top:14px;">
-      <thead>
-        <tr style="border-bottom:1px solid #e5e7eb;">
-          <th style="text-align:left; padding:10px;">#</th>
-          <th style="text-align:left; padding:10px;">Team Name</th>
-          <th style="text-align:center; padding:10px;">
-            Overall<br><small>Count / Sq.ft</small>
-          </th>
-		  <th class="col-live" style="text-align:center; padding:10px;">
-  Overall Live<br><small>Count / Sq.ft / %</small>
-</th>
-
-<th class="col-cancel" style="text-align:center; padding:10px;">
-  Cancel<br><small>Count / Sq.ft / %</small>
-</th>
-
-		  
-          <th style="text-align:center; padding:10px;">Status</th>
-        </tr>
-      </thead>
-
-      <tbody id="teamTableBody">
-        <!-- rows injected by JS -->
-      </tbody>
-    </table>
-  </div>
-
 </div>
-	
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- PDF Export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-
 
 <script>
-let fullCSVData = [];
-let teamStatusChart = null;
-
-// Teams to hide temporarily
-const HIDDEN_TEAMS = ["gistak"];
-
-
-Papa.parse(
-  "https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv",
-  {
-  download: true,
-  header: true,
-  skipEmptyLines: true,
-  complete: function (res) {
-    console.log("CSV DATA:", res.data); // DEBUG
-    fullCSVData = res.data;
-	initDashboard(fullCSVData);
-	renderTeamTable(fullCSVData);
-	renderTeamStatusChart(fullCSVData);
-
-  },
-  error: function (err) {
-    console.error("CSV Load Error:", err);
-  }
-});
-
-const filtered = fullCSVData.filter(row => {
-  const team =
-    row["TEAM NAME"] ||
-    row["Team Name"] ||
-    row["TEAM"] ||
-    row["team"];
-
-  if (!team) return false;
-
-  return normalizeTeamName(team) === normalizeTeamName(selectedTeam);
-
-  });
-
-
-
-
-function formatNumber(value) {
-  if (!value || isNaN(value)) return "0";
-  return Math.round(Number(value)).toString();
+function openTeamReport() {
+  window.location.href = "Team-wise-report.html";
 }
 
-
-function normalizeTeamName(value) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
+function openStaffReport() {
+  window.location.href = "staff-index.html";
 }
-function getVisibleData(data) {
-  return data.filter(row => {
-    const team = getTeamName(row);
-    return !HIDDEN_TEAMS.includes(normalizeTeamName(team));
-  });
+function openYearwiseReport() {
+  window.location.href = "year-wise-report.html";
 }
-
-function openMonthReport(month) {
-  window.open(`month-report.html?month=${encodeURIComponent(month)}`, "_blank");
+function opensourceReport() {
+  window.location.href = "Source_Wise_Report.html";
 }
-
-
-
-function getTeamName(row) {
-  return (
-    row["TEAM NAME"] ||
-    row["Team Name"] ||
-    row["TEAM"] ||
-    row["team"] ||
-    ""
-  ).trim();
-}
-
-
-function initDashboard(data) {
-  if (!data || data.length === 0) return;
-  
-   // ⛔ Exclude hidden teams (GISTAK)
-  const visibleData = getVisibleData(data);
-
-  let totalTransactions = 0;
-  let totalSqft = 0;
-  const monthMap = {};
-
-  const sqftKey = Object.keys(data[0]).find(k =>
-    k.toLowerCase().replace(/\s+/g, " ").trim() === "actual total sq-ft"
-  );
-
-  console.log("Detected SQFT column:", sqftKey);
-
-  visibleData.forEach(row => {
-    const rawDate = row["BOOKING DATE"];
-    if (!rawDate) return;
-
-    const d = rawDate.split("-");
-    if (d.length !== 3) return;
-
-    const date = new Date(`${d[2]}-${d[1]}-${d[0]}`);
-    if (isNaN(date)) return;
-
-    const month = date.toLocaleString("default", { month: "long" });
-
-    const sqftRaw = row[sqftKey];
-
-	let sqft = 0;
-	if (sqftRaw !== undefined && sqftRaw !== null) {
-	  const cleaned = String(sqftRaw)
-		.replace(/,/g, "")
-		.replace(/-/g, "")
-		.trim();
-
-	  sqft = cleaned !== "" && !isNaN(cleaned) ? Number(cleaned) : 0;
-	}
-
-totalTransactions++;
-totalSqft += sqft;
-
-
-    if (!monthMap[month]) {
-      monthMap[month] = { count: 0, sqft: 0 };
-    }
-
-    monthMap[month].count++;
-    monthMap[month].sqft += sqft;
-  });
-
-  document.getElementById("totalTransactions").innerText =
-  formatNumber(totalTransactions);
-
-
- document.getElementById("totalSqft").innerText =
-  formatNumber(totalSqft);
-
-
-  const months = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
-  const colors = ["blue","orange","pink","green"];
-
-  
-  const container = document.getElementById("monthCards");
-  container.innerHTML = "";
-
-  months.forEach((m, i) => {
-    const d = monthMap[m] || { count: 0, sqft: 0 };
-	// ---- ADD START: Live & Cancel count per month ----
-const monthRows = visibleData.filter(row => {
-  const rawDate = row["BOOKING DATE"];
-  if (!rawDate) return false;
-
-  const parts = rawDate.split("-");
-  if (parts.length !== 3) return false;
-
-  const date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-  if (isNaN(date)) return false;
-
-  return date.toLocaleString("default", { month: "long" }) === m;
-});
-
-let liveCount = 0;
-let cancelCount = 0;
-
-monthRows.forEach(row => {
-  const status = getDailyStatus(row);
-
-  if (
-    status.includes("live") ||
-    status.includes("registration done") ||
-    status.includes("agreement done")
-  ) {
-    liveCount++;
-  } else if (status.includes("cancel")) {
-    cancelCount++;
-  }
-});
-// ---- ADD END ----
-
-	const percentage =
-  totalSqft > 0
-    ? Math.round((d.sqft / totalSqft) * 100)
-    : 0;
-
-container.innerHTML += `
-  <!-- <div class="location ${colors[i % 4]}"> -->
-  <div class="location ${colors[i % 4]}" onclick="openMonthReport('${m}')">
-
-    <h3>${m}</h3>
-    <h1>${formatNumber(d.count)}</h1>
-    <p>${formatNumber(d.sqft)} sq.ft</p>
-
-    <!-- Live / Cancel (VISIBLE & CLEAR) -->
-    <!-- Percentage badge (TOP RIGHT) -->
-<div class="month-percent">${percentage}%</div>
-
-<!-- Live / Cancel strip (BOTTOM) -->
-<div class="month-stats">
-  <span class="live">Live ${liveCount}</span>
-  <span class="cancel">Cancel ${cancelCount}</span>
-</div>
-
-
-
-    <!-- Percentage watermark -->
-      </div>
-`;
-
-
-
-  });
-}
-
-
-function getTeamName(row) {
-  const key = Object.keys(row).find(k =>
-    k.toLowerCase().replace(/\s+/g, " ").trim() === "team name"
-  );
-
-  return key ? String(row[key]).trim() : "";
-}
-
-function getDailyStatus(row) {
-  const key = Object.keys(row).find(k =>
-    k.toLowerCase().replace(/\s+/g, " ").trim() === "rough daily updation"
-  );
-  return key ? String(row[key]).toLowerCase() : "";
-}
-
-function buildStatusSummary(data) {
-  let live = 0;
-  let cancel = 0;
-
-  data.forEach(row => {
-    const status = getDailyStatus(row);
-
-    if (
-      status.includes("live") ||
-      status.includes("registration done") ||
-      status.includes("agreement done")
-    ) {
-      live++;
-    } else if (status.includes("cancel")) {
-      cancel++;
-    }
-  });
-
-  return { live, cancel, total: live + cancel };
-}
-
-// ===============================
-// CENTER TEXT PLUGIN (ADD ONLY)
-// ===============================
-const centerTextPlugin = {
-  id: "centerText",
-  afterDraw(chart) {
-    const { ctx, chartArea } = chart;
-    if (!chartArea) return;
-
-    const data = chart.data.datasets[0].data;
-    const total = data.reduce((a, b) => a + b, 0);
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    // Main number
-    ctx.font = "700 34px Segoe UI";
-    ctx.fillStyle = "#0f172a";
-    ctx.fillText(
-      total,
-      chartArea.left + chartArea.width / 2,
-      chartArea.top + chartArea.height / 2 - 6
-    );
-
-    // Sub text
-    ctx.font = "500 14px Segoe UI";
-    ctx.fillStyle = "#64748b";
-    ctx.fillText(
-      "Total Count",
-      chartArea.left + chartArea.width / 2,
-      chartArea.top + chartArea.height / 2 + 18
-    );
-
-    ctx.restore();
-  }
-};
-
-
-
-function renderTeamStatusChart(data) {
-  const ctx = document.getElementById("teamStatusChart").getContext("2d");
-  const summary = buildStatusSummary(data);
-
-  <!-- document.getElementById("chartTotalText").innerText = -->
-    <!-- `Total: ${summary.total} transactions`; -->
-
-  if (teamStatusChart) {
-    teamStatusChart.destroy();
-  }
-
-  teamStatusChart = new Chart(ctx, {
-  plugins: [centerTextPlugin],
-    type: "doughnut",
-    data: {
-      labels: ["Live", "Cancel"],
-      datasets: [{
-        data: [summary.live, summary.cancel],
-        backgroundColor: ["#60a5fa", "#34d399"], // blue + green (soft)
-        borderWidth: 4,
-        borderColor: "#ffffff"
-      }]
-    },
-    options: {
-      cutout: "70%",
-      plugins: {
-        legend: {
-  position: "bottom",
-  labels: {
-  usePointStyle: true,
-  pointStyle: "circle",
-  padding: 18,
-  font: {
-    size: 13,
-    weight: "600"
-  },
-  generateLabels(chart) {
-    const data = chart.data.datasets[0].data;
-    const total = data.reduce((a, b) => a + b, 0);
-
-    return chart.data.labels.map((label, i) => {
-      const value = data[i];
-      const percent = total ? Math.round((value / total) * 100) : 0;
-
-      return {
-        text: `${label} ${percent}%`,
-        fillStyle: chart.data.datasets[0].backgroundColor[i],
-        strokeStyle: chart.data.datasets[0].backgroundColor[i],
-        index: i
-      };
-    });
-  }
-}
-
-}
-
-      }
-    }
-  });
-}
-
-function getPerformanceStatus(livePercent, cancelPercent) {
-  const dominantPercent = Math.max(livePercent, cancelPercent);
-
-  if (dominantPercent >= 55) {
-    return "Excellent";
-  } else if (dominantPercent >= 40) {
-    return "Good";
-  } else {
-    return "Average";
-  }
-}
-
-
-
-function renderTeamTable(data) {
-  const tbody = document.getElementById("teamTableBody");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  // group by team name
-  const teamMap = {};
-
-  data.forEach(row => {
-	const team = getTeamName(row);
-	
-    if (!team) return;
-
-    const sqft = Number(row["Actual TOTAL SQ-FT"] || 0);
-
-    if (!teamMap[team]) {
-  teamMap[team] = {
-    count: 0,
-    sqft: 0,
-    liveCount: 0,
-    liveSqft: 0,
-    cancelCount: 0,
-    cancelSqft: 0
-  };
-}
-
-
-    teamMap[team].count += 1;
-    teamMap[team].sqft += sqft;
-	const dailyStatus = getDailyStatus(row);
-
-	if (
-	  dailyStatus.includes("live") ||
-	  dailyStatus.includes("registration done") ||
-	  dailyStatus.includes("agreement done")
-	) {
-	  teamMap[team].liveCount += 1;
-	  teamMap[team].liveSqft += sqft;
-	}
-	else if (dailyStatus.includes("cancel")) {
-	  teamMap[team].cancelCount += 1;
-	  teamMap[team].cancelSqft += sqft;
-	}
-
-  });
-
-  let index = 1;
-
-	const sortedTeams = Object.entries(teamMap)
-  .sort((a, b) => b[1].sqft - a[1].sqft);
-
-  //Object.entries(teamMap).forEach(([team, stats]) => {
-  sortedTeams.forEach(([team, stats]) => {
-
-  // ⛔ Hide GISTAK for now
-  if (HIDDEN_TEAMS.includes(normalizeTeamName(team))) {
-    return;
-  }
-
-    const tr = document.createElement("tr");
-    tr.style.borderBottom = "1px solid #e5e7eb";
-	
-	const livePercent = stats.count
-  ? Math.round((stats.liveCount / stats.count) * 100)
-  : 0;
-
-const cancelPercent = stats.count
-  ? Math.round((stats.cancelCount / stats.count) * 100)
-  : 0;
-
-const status = getPerformanceStatus(livePercent, cancelPercent);
-
-
-    tr.innerHTML = `
-      <td style="padding:10px;">${index++}</td>
-      <td style="padding:10px; font-weight:600;">${team}</td>
-      <td style="padding:10px; text-align:center;">
-        ${stats.count}<br>
-        <small>${Math.round(stats.sqft)}</small>
-      </td>
-	  <td class="col-live" style="padding:10px; text-align:center;">
-  ${stats.liveCount}<br>
-  <small>${Math.round(stats.liveSqft)}</small><br>
-  <small>
-    ${stats.count ? Math.round((stats.liveCount / stats.count) * 100) : 0}%
-  </small>
-</td>
-
-<td class="col-cancel" style="padding:10px; text-align:center;">
-  ${stats.cancelCount}<br>
-  <small>${Math.round(stats.cancelSqft)}</small><br>
-  <small>
-    ${stats.count ? Math.round((stats.cancelCount / stats.count) * 100) : 0}%
-  </small>
-</td>
-
-      <td style="padding:10px; text-align:center;">
-  <span class="status-pill ${status.toLowerCase()}">
-    ${status}
-  </span>
-</td>
-
-    `;
-
-    tbody.appendChild(tr);
-  });
-}
-
-
-// ===============================
-// TEAM FILTER HANDLER (ADD ONLY)
-// ===============================
-const teamSelect = document.getElementById("teamFilter");
-
-teamSelect.addEventListener("change", function () {
-  const selectedTeam = this.value;
-
-  // If "All Teams", show full data
-  if (selectedTeam === "All Teams") {
-    initDashboard(fullCSVData);
-	renderTeamTable(fullCSVData);
-	renderTeamStatusChart(fullCSVData);
-    return;
-  }
-
-  // Filter rows by team name
-  const filteredData = fullCSVData.filter(row => {
-  const teamFromCSV = getTeamName(row);
-
-  return normalizeTeamName(teamFromCSV) ===
-         normalizeTeamName(selectedTeam);
-});
-
-
-  console.log("Selected Team:", selectedTeam);
-  console.log("Filtered Rows:", filteredData.length);
-  console.log([...new Set(fullCSVData.map(getTeamName))]);
-  console.log("Filtered teams:", [...new Set(filteredData.map(getTeamName))]);
-
-
-
-  initDashboard(filteredData);
-  renderTeamTable(filteredData);
-  renderTeamStatusChart(filteredData);
-
-
-});
-
-
 </script>
-
-<script>
-document.getElementById("downloadBtn").addEventListener("click", async () => {
-  const { jsPDF } = window.jspdf;
-
-  const button = document.getElementById("downloadBtn");
-  const dashboard = document.querySelector(".container");
-
-  if (!dashboard) {
-    alert("Dashboard not found!");
-    return;
-  }
-
-  // Hide button while capturing
-  button.style.visibility = "hidden";
-  window.scrollTo(0, 0);
-
-  try {
-    const canvas = await html2canvas(dashboard, {
-      scale: 2.5,
-      useCORS: true,
-      backgroundColor: "#f5f7fb",
-      scrollX: 0,
-      scrollY: 0
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
-    const pdfWidth = canvas.width * 0.264583;
-    const pdfHeight = canvas.height * 0.264583;
-
-    const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? "l" : "p",
-      unit: "mm",
-      format: [pdfWidth, pdfHeight]
-    });
-
-    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-
-    const now = new Date();
-    const fileName =
-      `Booking_Status_Report_${now.getDate()}_${now.getMonth()+1}_${now.getFullYear()}.pdf`;
-
-    pdf.save(fileName);
-
-  } catch (err) {
-    console.error("PDF error:", err);
-    alert("PDF download failed");
-  } finally {
-    button.style.visibility = "visible";
-  }
-});
-</script>
-
-	
 </body>
 </html>
