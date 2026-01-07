@@ -100,10 +100,10 @@
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
-
 <script>
+
 /* -----------------------------------------------------------
-   LOAD Overall.csv (Your original two charts)
+   LOAD Overall.csv (Your original charts)
 ----------------------------------------------------------- */
 Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
     download: true,
@@ -152,25 +152,30 @@ Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
 
         new Chart(document.getElementById("countChart"), {
             type: "bar",
-            data: { labels: years, datasets: [
-                { label: "Cash Count", data: cashCounts, backgroundColor: "#8ec9ff" },
-                { label: "Loan Count", data: loanCounts, backgroundColor: "#ffb3c6" }
-            ]}
+            data: {
+                labels: years,
+                datasets: [
+                    { label: "Cash Count", data: cashCounts, backgroundColor: "#8ec9ff" },
+                    { label: "Loan Count", data: loanCounts, backgroundColor: "#ffb3c6" }
+                ]
+            }
         });
 
         new Chart(document.getElementById("sqftChart"), {
             type: "line",
-            data: { labels: years, datasets: [
-                { label: "Total SQ-FT", data: totalSqFt, borderColor: "#007bff", borderWidth: 3 }
-            ]}
+            data: {
+                labels: years,
+                datasets: [
+                    { label: "Total SQ-FT", data: totalSqFt, borderColor: "#007bff", borderWidth: 3 }
+                ]
+            }
         });
-
     }
 });
-<!-- Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", { -->
+
 
 /* -----------------------------------------------------------
-   LOAD Pivot.csv (Success / UnSuccess / Overall summary)
+   LOAD Pivot.csv (Success / UnSuccess / Overall)
 ----------------------------------------------------------- */
 Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", {
     download: true,
@@ -180,37 +185,44 @@ Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", {
 
         const rows = results.data;
 
-        let years = ["2021", "2022", "2023", "2024", "2025"];
-        let successTotals = [0,0,0,0,0];
-        let unsuccessTotals = [0,0,0,0,0];
-        let overallTotals = [0,0,0,0,0];
+        let years = [];
+        let successCounts = [];
+        let unsuccessCounts = [];
+        let overallCounts = [];
 
-        let totalSuccess = 0, totalUnsuccess = 0;
-        let totalSuccessSqft = 0, totalUnsuccessSqft = 0;
+        let totalSuccess = 0,
+            totalUnsuccess = 0,
+            totalSuccessSqft = 0,
+            totalUnsuccessSqft = 0;
 
         rows.forEach(row => {
-            years.forEach((y,i) => {
 
-                // Corrected column names based on your file
-                let s = parseInt(row[`${y} Success`]) || 0;
-                let u = parseInt(row[`${y} UnSuccess`]) || 0;
+            if (!row.Year) return;
 
-                let ss = parseFloat(row[`${y} Success Sqft`]) || 0;
-                let us = parseFloat(row[`${y} UnSuccess Sqft`]) || 0;
+            let y = row.Year;
 
-                successTotals[i] += s;
-                unsuccessTotals[i] += u;
-                overallTotals[i] += (s + u);
+            years.push(y);
 
-                totalSuccess += s;
-                totalUnsuccess += u;
+            let sCount = parseInt(row.Success_Count) || 0;
+            let sSqft = parseFloat(row.Success_SQFT) || 0;
 
-                totalSuccessSqft += ss;
-                totalUnsuccessSqft += us;
-            });
+            let uCount = parseInt(row.UnSuccess_Count) || 0;
+            let uSqft = parseFloat(row.UnSuccess_SQFT) || 0;
+
+            let oCount = parseInt(row.Total_Count) || (sCount + uCount);
+
+            successCounts.push(sCount);
+            unsuccessCounts.push(uCount);
+            overallCounts.push(oCount);
+
+            totalSuccess += sCount;
+            totalUnsuccess += uCount;
+
+            totalSuccessSqft += sSqft;
+            totalUnsuccessSqft += uSqft;
         });
 
-        // Update summary boxes
+        // UPDATE KPI VALUES
         document.getElementById("overallCount").innerText = totalSuccess + totalUnsuccess;
         document.getElementById("overallSqft").innerText = (totalSuccessSqft + totalUnsuccessSqft).toLocaleString();
 
@@ -220,16 +232,34 @@ Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", {
         document.getElementById("unsuccessCount").innerText = totalUnsuccess;
         document.getElementById("unsuccessSqft").innerText = totalUnsuccessSqft.toLocaleString();
 
-        // Chart
+        // CHART CREATION
         new Chart(document.getElementById("pivotCountChart"), {
             type: "bar",
             data: {
                 labels: years,
                 datasets: [
-                    { label: "Success Count", data: successTotals, backgroundColor: "#4cb3ff" },
-                    { label: "UnSuccess Count", data: unsuccessTotals, backgroundColor: "#ff738a" },
-                    { label: "Overall Count", data: overallTotals, backgroundColor: "#55cc66" }
+                    {
+                        label: "Success Count",
+                        data: successCounts,
+                        backgroundColor: "#4cb3ff"
+                    },
+                    {
+                        label: "UnSuccess Count",
+                        data: unsuccessCounts,
+                        backgroundColor: "#ff738a"
+                    },
+                    {
+                        label: "Overall Count",
+                        data: overallCounts,
+                        backgroundColor: "#3cb44b"
+                    }
                 ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
             }
         });
 
@@ -237,9 +267,8 @@ Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", {
 });
 
 
-    }
-});
 </script>
+
 
 </body>
 </html>
