@@ -319,17 +319,18 @@
 	  <!-- HEADER -->
 	  <div class="header">
 		
-		<h1>Booking Status Report (Live, Agreement, Registration & Cancel) - Team wise</h1>
+		<h1>Booking Status Report (Live, Agreement, Registration & Cancel) - Staff wise</h1>
 		<p>Executive overview • Yearly booking performance</p>
 		<div style="margin-top:12px;">
-  <a href="month-report.html" target="_blank"
+  <a href="staff-month-report.html" target="_blank"
+
      style="
        font-size:14px;
        font-weight:600;
        color:#4f8cff;
        text-decoration:none;
      ">
-    📄 View Month-wise Team Report (Jan–Dec)
+    📄 View Month-wise Staff Report (Jan–Dec)
   </a>
 </div>
 
@@ -385,32 +386,20 @@
   <!-- FILTER CARD -->
   <div style="display:flex; flex-direction:column; gap:18px;">
   <div class="card">
-    <div class="card-title">Filter by Team</div>
+    <div class="card-title">Filter by Staff</div>
 
     <select id="teamFilter" style="
-      width:100%;
-      margin-top:8px;
-      padding:8px 12px;
-      border-radius:8px;
-      border:1px solid #e5e7eb;
-      font-size:13px;
-      background:#fff;
-    ">
-      <option value="All Teams">All Teams</option>
-      <option value="Ashok Sir">Ashok Sir</option>
-      <option value="Gopi Sir">Gopi Sir</option>
-      <!-- <option value="Gopi Sir">Gistak</option> -->
-      <option value="Kumaresan Sir">Kumaresan Sir</option>
-      <option value="Latha Mam & Ayyappan Sir">Latha Mam & Ayyappan Sir</option>
-      <option value="Prabhakaran Sir">Prabhakaran Sir</option>
-      <option value="Rajiv Sir">Rajiv Sir</option>
-      <option value="Ranjith Sir">Ranjith Sir</option>
-      <option value="Sankar Sir">Sankar Sir</option>
-      <option value="Selvakumar Sir">Selvakumar Sir</option>
-      <option value="Senthil Sir">Senthil Sir</option>
-      <option value="Suriya Sir">Suriya Sir</option>
-      <option value="Thangadurai Sir">Thangadurai Sir</option>
-    </select>
+  width:100%;
+  margin-top:8px;
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid #e5e7eb;
+  font-size:13px;
+  background:#fff;
+">
+  <option value="All Teams">All Staffs</option>
+</select>
+
   </div>
   
   <!-- CHART CARD -->
@@ -465,13 +454,13 @@
   <!-- TABLE CARD -->
   <div class="card" style="padding:22px;">
   <!-- <div class="card"> -->
-    <div class="card-title">Team Performance Details</div>
+    <div class="card-title">Staff Performance Details</div>
 
     <table style="width:100%; border-collapse:collapse; margin-top:14px;">
       <thead>
         <tr style="border-bottom:1px solid #e5e7eb;">
           <th style="text-align:left; padding:10px;">#</th>
-          <th style="text-align:left; padding:10px;">Team Name</th>
+          <th style="text-align:left; padding:10px;">Staff Name</th>
           <th style="text-align:center; padding:10px;">
             Overall<br><small>Count / Sq.ft</small>
           </th>
@@ -508,226 +497,10 @@
 let fullCSVData = [];
 let teamStatusChart = null;
 
-// Teams to hide temporarily
-const HIDDEN_TEAMS = ["gistak"];
-
-
-Papa.parse(
-  "https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv",
-  {
-  download: true,
-  header: true,
-  skipEmptyLines: true,
-  complete: function (res) {
-    console.log("CSV DATA:", res.data); // DEBUG
-    fullCSVData = res.data;
-	initDashboard(fullCSVData);
-	renderTeamTable(fullCSVData);
-	renderTeamStatusChart(fullCSVData);
-
-  },
-  error: function (err) {
-    console.error("CSV Load Error:", err);
-  }
-});
-
-const filtered = fullCSVData.filter(row => {
-  const team =
-    row["TEAM NAME"] ||
-    row["Team Name"] ||
-    row["TEAM"] ||
-    row["team"];
-
-  if (!team) return false;
-
-  return normalizeTeamName(team) === normalizeTeamName(selectedTeam);
-
-  });
-
-
-
-
-function formatNumber(value) {
-  if (!value || isNaN(value)) return "0";
-  return Math.round(Number(value)).toString();
-}
-
-
-function normalizeTeamName(value) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-function getVisibleData(data) {
-  return data.filter(row => {
-    const team = getTeamName(row);
-    return !HIDDEN_TEAMS.includes(normalizeTeamName(team));
-  });
-}
-
-function openMonthReport(month) {
-  window.open(`month-report.html?month=${encodeURIComponent(month)}`, "_blank");
-}
-
-
-
-function getTeamName(row) {
-  return (
-    row["TEAM NAME"] ||
-    row["Team Name"] ||
-    row["TEAM"] ||
-    row["team"] ||
-    ""
-  ).trim();
-}
-
-
-function initDashboard(data) {
-  if (!data || data.length === 0) return;
-  
-   // ⛔ Exclude hidden teams (GISTAK)
-  const visibleData = getVisibleData(data);
-
-  let totalTransactions = 0;
-  let totalSqft = 0;
-  const monthMap = {};
-
-  const sqftKey = Object.keys(data[0]).find(k =>
-    k.toLowerCase().replace(/\s+/g, " ").trim() === "actual total sq-ft"
-  );
-
-  console.log("Detected SQFT column:", sqftKey);
-
-  visibleData.forEach(row => {
-    const rawDate = row["BOOKING DATE"];
-    if (!rawDate) return;
-
-    const d = rawDate.split("-");
-    if (d.length !== 3) return;
-
-    const date = new Date(`${d[2]}-${d[1]}-${d[0]}`);
-    if (isNaN(date)) return;
-
-    const month = date.toLocaleString("default", { month: "long" });
-
-    const sqftRaw = row[sqftKey];
-
-	let sqft = 0;
-	if (sqftRaw !== undefined && sqftRaw !== null) {
-	  const cleaned = String(sqftRaw)
-		.replace(/,/g, "")
-		.replace(/-/g, "")
-		.trim();
-
-	  sqft = cleaned !== "" && !isNaN(cleaned) ? Number(cleaned) : 0;
-	}
-
-totalTransactions++;
-totalSqft += sqft;
-
-
-    if (!monthMap[month]) {
-      monthMap[month] = { count: 0, sqft: 0 };
-    }
-
-    monthMap[month].count++;
-    monthMap[month].sqft += sqft;
-  });
-
-  document.getElementById("totalTransactions").innerText =
-  formatNumber(totalTransactions);
-
-
- document.getElementById("totalSqft").innerText =
-  formatNumber(totalSqft);
-
-
-  const months = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-  ];
-
-  const colors = ["blue","orange","pink","green"];
-
-  
-  const container = document.getElementById("monthCards");
-  container.innerHTML = "";
-
-  months.forEach((m, i) => {
-    const d = monthMap[m] || { count: 0, sqft: 0 };
-	// ---- ADD START: Live & Cancel count per month ----
-const monthRows = visibleData.filter(row => {
-  const rawDate = row["BOOKING DATE"];
-  if (!rawDate) return false;
-
-  const parts = rawDate.split("-");
-  if (parts.length !== 3) return false;
-
-  const date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-  if (isNaN(date)) return false;
-
-  return date.toLocaleString("default", { month: "long" }) === m;
-});
-
-let liveCount = 0;
-let cancelCount = 0;
-
-monthRows.forEach(row => {
-  const status = getDailyStatus(row);
-
-  if (
-    status.includes("live") ||
-    status.includes("registration done") ||
-    status.includes("agreement done")
-  ) {
-    liveCount++;
-  } else if (status.includes("cancel")) {
-    cancelCount++;
-  }
-});
-// ---- ADD END ----
-
-	const percentage =
-  totalSqft > 0
-    ? Math.round((d.sqft / totalSqft) * 100)
-    : 0;
-
-container.innerHTML += `
-  <!-- <div class="location ${colors[i % 4]}"> -->
-  <div class="location ${colors[i % 4]}" onclick="openMonthReport('${m}')">
-
-    <h3>${m}</h3>
-    <h1>${formatNumber(d.count)}</h1>
-    <p>${formatNumber(d.sqft)} sq.ft</p>
-
-    <!-- Live / Cancel (VISIBLE & CLEAR) -->
-    <!-- Percentage badge (TOP RIGHT) -->
-<div class="month-percent">${percentage}%</div>
-
-<!-- Live / Cancel strip (BOTTOM) -->
-<div class="month-stats">
-  <span class="live">Live ${liveCount}</span>
-  <span class="cancel">Cancel ${cancelCount}</span>
-</div>
-
-
-
-    <!-- Percentage watermark -->
-      </div>
-`;
-
-
-
-  });
-}
-
-
-function getTeamName(row) {
+function getStaffName(row) {
   const key = Object.keys(row).find(k =>
-    k.toLowerCase().replace(/\s+/g, " ").trim() === "team name"
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "staff name"
   );
-
   return key ? String(row[key]).trim() : "";
 }
 
@@ -738,140 +511,255 @@ function getDailyStatus(row) {
   return key ? String(row[key]).toLowerCase() : "";
 }
 
-function buildStatusSummary(data) {
-  let live = 0;
-  let cancel = 0;
+
+function normalizeTeamName(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+
+
+// Teams to hide temporarily
+const HIDDEN_TEAMS = ["gistak"];
+
+function initDashboard(data) {
+  let totalCount = 0;
+  let totalSqft = 0;
 
   data.forEach(row => {
-    const status = getDailyStatus(row);
+    totalCount++;
 
-    if (
-      status.includes("live") ||
-      status.includes("registration done") ||
-      status.includes("agreement done")
-    ) {
-      live++;
-    } else if (status.includes("cancel")) {
-      cancel++;
+    const sqftKey = Object.keys(row).find(k =>
+      k.toLowerCase().replace(/\s+/g, " ").trim() === "actual total sq-ft"
+    );
+
+    if (sqftKey && row[sqftKey]) {
+      totalSqft += Number(String(row[sqftKey]).replace(/,/g, "")) || 0;
     }
   });
 
-  return { live, cancel, total: live + cancel };
+  document.getElementById("totalTransactions").innerText = totalCount;
+  document.getElementById("totalSqft").innerText = Math.round(totalSqft);
 }
 
-// ===============================
-// CENTER TEXT PLUGIN (ADD ONLY)
-// ===============================
+function populateStaffFilter(data) {
+  const select = document.getElementById("teamFilter");
+  if (!select) return;
+
+  const staffSet = new Set();
+
+  data.forEach(row => {
+    const staff = getStaffName(row);
+    if (staff) {
+      staffSet.add(staff);
+    }
+  });
+
+  [...staffSet]
+    .sort((a, b) => a.localeCompare(b))
+    .forEach(staff => {
+      const opt = document.createElement("option");
+      opt.value = staff;
+      opt.textContent = staff;
+      select.appendChild(opt);
+    });
+}
+
+function renderMonthCards(data) {
+  const container = document.getElementById("monthCards");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  const colors = ["blue","orange","pink","green"];
+
+  const sqftKey = Object.keys(data[0] || {}).find(k =>
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "actual total sq-ft"
+  );
+
+  const monthMap = {};
+
+  data.forEach(row => {
+    const raw = row["BOOKING DATE"];
+    if (!raw) return;
+
+    const p = raw.split("-");
+    const d = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+    if (isNaN(d)) return;
+
+    const month = d.toLocaleString("default", { month: "long" });
+    const sqft = Number(String(row[sqftKey] || 0).replace(/,/g,"")) || 0;
+
+    if (!monthMap[month]) {
+      monthMap[month] = { count:0, sqft:0, live:0, cancel:0 };
+    }
+
+    monthMap[month].count++;
+    monthMap[month].sqft += sqft;
+
+    const status = getDailyStatus(row);
+    if (
+      status.includes("live") ||
+      status.includes("registration") ||
+      status.includes("agreement")
+    ) {
+      monthMap[month].live++;
+    } else if (status.includes("cancel")) {
+      monthMap[month].cancel++;
+    }
+  });
+
+  const totalSqft = Object.values(monthMap)
+    .reduce((s,v)=>s+v.sqft,0);
+
+  months.forEach((m,i)=>{
+    const d = monthMap[m] || {count:0,sqft:0,live:0,cancel:0};
+    const pct = totalSqft ? Math.round((d.sqft/totalSqft)*100) : 0;
+
+    container.innerHTML += `
+      <div class="location ${colors[i%4]}">
+        <h3>${m}</h3>
+        <h1>${d.count}</h1>
+        <p>${Math.round(d.sqft)} sq.ft</p>
+
+        <div class="month-percent">${pct}%</div>
+
+        <div class="month-stats">
+          <span class="live">Live ${d.live}</span>
+          <span class="cancel">Cancel ${d.cancel}</span>
+        </div>
+      </div>
+    `;
+  });
+}
+
+
 const centerTextPlugin = {
   id: "centerText",
-  afterDraw(chart) {
-    const { ctx, chartArea } = chart;
-    if (!chartArea) return;
-
-    const data = chart.data.datasets[0].data;
-    const total = data.reduce((a, b) => a + b, 0);
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    // Main number
-    ctx.font = "700 34px Segoe UI";
-    ctx.fillStyle = "#0f172a";
-    ctx.fillText(
-      total,
-      chartArea.left + chartArea.width / 2,
-      chartArea.top + chartArea.height / 2 - 6
-    );
-
-    // Sub text
-    ctx.font = "500 14px Segoe UI";
-    ctx.fillStyle = "#64748b";
-    ctx.fillText(
-      "Total Count",
-      chartArea.left + chartArea.width / 2,
-      chartArea.top + chartArea.height / 2 + 18
-    );
+  beforeDraw(chart) {
+    const { width, height, ctx } = chart;
+    const total = chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
 
     ctx.restore();
+    ctx.font = "700 36px Segoe UI";
+    ctx.fillStyle = "#0f172a";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(total, width / 2, height / 2 - 10);
+
+    ctx.font = "14px Segoe UI";
+    ctx.fillStyle = "#64748b";
+    ctx.fillText("Total Count", width / 2, height / 2 + 18);
+    ctx.save();
   }
 };
 
 
 
 function renderTeamStatusChart(data) {
-  const ctx = document.getElementById("teamStatusChart").getContext("2d");
-  const summary = buildStatusSummary(data);
+  const ctx = document.getElementById("teamStatusChart");
+  if (!ctx) return;
 
-  <!-- document.getElementById("chartTotalText").innerText = -->
-    <!-- `Total: ${summary.total} transactions`; -->
+  let liveCount = 0;
+  let cancelCount = 0;
 
+  data.forEach(row => {
+    const status = getDailyStatus(row);
+    if (
+      status.includes("live") ||
+      status.includes("registration") ||
+      status.includes("agreement")
+    ) {
+      liveCount++;
+    } else if (status.includes("cancel")) {
+      cancelCount++;
+    }
+  });
+
+  // Destroy previous chart if exists
   if (teamStatusChart) {
     teamStatusChart.destroy();
   }
 
   teamStatusChart = new Chart(ctx, {
-  plugins: [centerTextPlugin],
-    type: "doughnut",
-    data: {
+  type: "doughnut",
+  plugins: [centerTextPlugin], // ✅ ADD THIS LINE
+  data: {
+
       labels: ["Live", "Cancel"],
       datasets: [{
-        data: [summary.live, summary.cancel],
-        backgroundColor: ["#60a5fa", "#34d399"], // blue + green (soft)
-        borderWidth: 4,
-        borderColor: "#ffffff"
+        data: [liveCount, cancelCount],
+        backgroundColor: ["#60a5fa", "#34d399"],
+        borderWidth: 2,
+        hoverOffset: 6
       }]
     },
     options: {
       cutout: "70%",
       plugins: {
         legend: {
-  position: "bottom",
-  labels: {
-  usePointStyle: true,
-  pointStyle: "circle",
-  padding: 18,
-  font: {
-    size: 13,
-    weight: "600"
-  },
-  generateLabels(chart) {
-    const data = chart.data.datasets[0].data;
-    const total = data.reduce((a, b) => a + b, 0);
-
-    return chart.data.labels.map((label, i) => {
-      const value = data[i];
-      const percent = total ? Math.round((value / total) * 100) : 0;
-
-      return {
-        text: `${label} ${percent}%`,
-        fillStyle: chart.data.datasets[0].backgroundColor[i],
-        strokeStyle: chart.data.datasets[0].backgroundColor[i],
-        index: i
-      };
-    });
-  }
-}
-
-}
-
+          position: "bottom",
+          labels: {
+            usePointStyle: true,
+            padding: 16,
+            font: {
+              size: 13,
+              weight: "600"
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.label}: ${ctx.raw}`
+          }
+        }
       }
     }
   });
 }
+	
 
-function getPerformanceStatus(livePercent, cancelPercent) {
-  const dominantPercent = Math.max(livePercent, cancelPercent);
 
-  if (dominantPercent >= 55) {
-    return "Excellent";
-  } else if (dominantPercent >= 40) {
-    return "Good";
-  } else {
-    return "Average";
+
+
+Papa.parse(
+  "https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv",
+  {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function (res) {
+      console.log("CSV DATA:", res.data);
+
+      fullCSVData = res.data;
+
+      // ✅ Populate staff dropdown
+      populateStaffFilter(fullCSVData);
+
+      // ✅ Summary cards
+      initDashboard(fullCSVData);
+
+      // ✅ MONTH CARDS (THIS WAS MISSING EARLIER)
+      renderMonthCards(fullCSVData);
+
+      // ✅ Table
+      renderTeamTable(fullCSVData);
+
+      // ✅ Donut chart
+      renderTeamStatusChart(fullCSVData);
+    },
+    error: function (err) {
+      console.error("CSV Load Error:", err);
+    }
   }
-}
-
+);
 
 
 function renderTeamTable(data) {
@@ -880,108 +768,102 @@ function renderTeamTable(data) {
 
   tbody.innerHTML = "";
 
-  // group by team name
   const teamMap = {};
 
   data.forEach(row => {
-	const team = getTeamName(row);
-	
-    if (!team) return;
+    const staff = getStaffName(row);
+    if (!staff) return;
 
-    const sqft = Number(row["Actual TOTAL SQ-FT"] || 0);
+    const sqftKey = Object.keys(row).find(k =>
+      k.toLowerCase().replace(/\s+/g, " ").trim() === "actual total sq-ft"
+    );
 
-    if (!teamMap[team]) {
-  teamMap[team] = {
-    count: 0,
-    sqft: 0,
-    liveCount: 0,
-    liveSqft: 0,
-    cancelCount: 0,
-    cancelSqft: 0
-  };
-}
+    let sqft = 0;
+    if (sqftKey && row[sqftKey]) {
+      sqft = Number(String(row[sqftKey]).replace(/,/g, "")) || 0;
+    }
 
+    if (!teamMap[staff]) {
+      teamMap[staff] = {
+        count: 0,
+        sqft: 0,
+        liveCount: 0,
+        liveSqft: 0,
+        cancelCount: 0,
+        cancelSqft: 0
+      };
+    }
 
-    teamMap[team].count += 1;
-    teamMap[team].sqft += sqft;
-	const dailyStatus = getDailyStatus(row);
+    teamMap[staff].count++;
+    teamMap[staff].sqft += sqft;
 
-	if (
-	  dailyStatus.includes("live") ||
-	  dailyStatus.includes("registration done") ||
-	  dailyStatus.includes("agreement done")
-	) {
-	  teamMap[team].liveCount += 1;
-	  teamMap[team].liveSqft += sqft;
-	}
-	else if (dailyStatus.includes("cancel")) {
-	  teamMap[team].cancelCount += 1;
-	  teamMap[team].cancelSqft += sqft;
-	}
+    const status = getDailyStatus(row);
 
+    if (
+      status.includes("live") ||
+      status.includes("registration") ||
+      status.includes("agreement")
+    ) {
+      teamMap[staff].liveCount++;
+      teamMap[staff].liveSqft += sqft;
+    } else if (status.includes("cancel")) {
+      teamMap[staff].cancelCount++;
+      teamMap[staff].cancelSqft += sqft;
+    }
   });
 
   let index = 1;
 
-	const sortedTeams = Object.entries(teamMap)
-  .sort((a, b) => b[1].sqft - a[1].sqft);
+  Object.entries(teamMap)
+    .sort((a, b) => b[1].sqft - a[1].sqft)
+    .forEach(([staff, stats]) => {
 
-  //Object.entries(teamMap).forEach(([team, stats]) => {
-  sortedTeams.forEach(([team, stats]) => {
+      const livePct = stats.count
+        ? Math.round((stats.liveCount / stats.count) * 100)
+        : 0;
 
-  // ⛔ Hide GISTAK for now
-  if (HIDDEN_TEAMS.includes(normalizeTeamName(team))) {
-    return;
-  }
+      const cancelPct = stats.count
+        ? Math.round((stats.cancelCount / stats.count) * 100)
+        : 0;
 
-    const tr = document.createElement("tr");
-    tr.style.borderBottom = "1px solid #e5e7eb";
-	
-	const livePercent = stats.count
-  ? Math.round((stats.liveCount / stats.count) * 100)
-  : 0;
+      const status =
+        livePct >= 55 ? "Excellent" :
+        livePct >= 40 ? "Good" : "Average";
 
-const cancelPercent = stats.count
-  ? Math.round((stats.cancelCount / stats.count) * 100)
-  : 0;
+      const tr = document.createElement("tr");
 
-const status = getPerformanceStatus(livePercent, cancelPercent);
+      tr.innerHTML = `
+        <td style="padding:10px;">${index++}</td>
+        <td style="padding:10px; font-weight:600;">${staff}</td>
 
+        <td style="padding:10px; text-align:center;">
+          ${stats.count}<br>
+          <small>${Math.round(stats.sqft)}</small>
+        </td>
 
-    tr.innerHTML = `
-      <td style="padding:10px;">${index++}</td>
-      <td style="padding:10px; font-weight:600;">${team}</td>
-      <td style="padding:10px; text-align:center;">
-        ${stats.count}<br>
-        <small>${Math.round(stats.sqft)}</small>
-      </td>
-	  <td class="col-live" style="padding:10px; text-align:center;">
-  ${stats.liveCount}<br>
-  <small>${Math.round(stats.liveSqft)}</small><br>
-  <small>
-    ${stats.count ? Math.round((stats.liveCount / stats.count) * 100) : 0}%
-  </small>
-</td>
+        <td class="col-live" style="padding:10px; text-align:center;">
+          ${stats.liveCount}<br>
+          <small>${Math.round(stats.liveSqft)}</small><br>
+          <small>${livePct}%</small>
+        </td>
 
-<td class="col-cancel" style="padding:10px; text-align:center;">
-  ${stats.cancelCount}<br>
-  <small>${Math.round(stats.cancelSqft)}</small><br>
-  <small>
-    ${stats.count ? Math.round((stats.cancelCount / stats.count) * 100) : 0}%
-  </small>
-</td>
+        <td class="col-cancel" style="padding:10px; text-align:center;">
+          ${stats.cancelCount}<br>
+          <small>${Math.round(stats.cancelSqft)}</small><br>
+          <small>${cancelPct}%</small>
+        </td>
 
-      <td style="padding:10px; text-align:center;">
-  <span class="status-pill ${status.toLowerCase()}">
-    ${status}
-  </span>
-</td>
+        <td style="padding:10px; text-align:center;">
+          <span class="status-pill ${status.toLowerCase()}">
+            ${status}
+          </span>
+        </td>
+      `;
 
-    `;
-
-    tbody.appendChild(tr);
-  });
+      tbody.appendChild(tr);
+    });
 }
+
 
 
 // ===============================
@@ -994,15 +876,17 @@ teamSelect.addEventListener("change", function () {
 
   // If "All Teams", show full data
   if (selectedTeam === "All Teams") {
-    initDashboard(fullCSVData);
-	renderTeamTable(fullCSVData);
-	renderTeamStatusChart(fullCSVData);
-    return;
-  }
+  initDashboard(fullCSVData);
+  renderMonthCards(fullCSVData);   // ✅ ADD
+  renderTeamTable(fullCSVData);
+  renderTeamStatusChart(fullCSVData);
+  return;
+}
+
 
   // Filter rows by team name
   const filteredData = fullCSVData.filter(row => {
-  const teamFromCSV = getTeamName(row);
+  const teamFromCSV = getStaffName(row);
 
   return normalizeTeamName(teamFromCSV) ===
          normalizeTeamName(selectedTeam);
@@ -1011,12 +895,14 @@ teamSelect.addEventListener("change", function () {
 
   console.log("Selected Team:", selectedTeam);
   console.log("Filtered Rows:", filteredData.length);
-  console.log([...new Set(fullCSVData.map(getTeamName))]);
-  console.log("Filtered teams:", [...new Set(filteredData.map(getTeamName))]);
+  console.log([...new Set(fullCSVData.map(getStaffName))]);
+ console.log("Filtered staff:", [...new Set(filteredData.map(getStaffName))]);
+
 
 
 
   initDashboard(filteredData);
+  renderMonthCards(filteredData);
   renderTeamTable(filteredData);
   renderTeamStatusChart(filteredData);
 
@@ -1078,7 +964,6 @@ document.getElementById("downloadBtn").addEventListener("click", async () => {
   }
 });
 </script>
-
 	
 </body>
 </html>

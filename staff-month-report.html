@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Month Wise Booking Report</title>
+  <style>
+    body {
+      font-family: Segoe UI, sans-serif;
+      background: #f5f7fb;
+      padding: 24px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #334155;
+      color: #fff;
+    }
+    .live { background:#dcfce7; }
+    .cancel { background:#fee2e2; }
+  </style>
+</head>
+<body>
+
+<h1 id="title"></h1>
+
+<div style="text-align:right; margin-bottom:16px;">
+  <button id="downloadMonthPdf" style="
+    background:#4f8cff;
+    color:#ffffff;
+    font-weight:600;
+    border:none;
+    border-radius:8px;
+    padding:8px 16px;
+    cursor:pointer;
+    font-size:13px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  ">
+    ⬇️ Download PDF
+  </button>
+</div>
+
+
+<table>
+  <thead>
+  <tr>
+    <th rowspan="2">#</th>
+    <th rowspan="2">Month</th>
+
+    <th colspan="2" class="col-overall">Overall</th>
+    <th rowspan="2" class="col-prev">Previous &<br>Current Month</th>
+
+    <th colspan="3" class="col-live">Overall Live</th>
+    <th colspan="3" class="col-cancel">Cancel</th>
+  </tr>
+
+  <tr>
+    <th class="col-overall">Count</th>
+    <th class="col-overall">SQ-FT</th>
+
+    <th class="col-live">Count</th>
+    <th class="col-live">SQ-FT</th>
+    <th class="col-live">%</th>
+
+    <th class="col-cancel">Count</th>
+    <th class="col-cancel">SQ-FT</th>
+    <th class="col-cancel">%</th>
+  </tr>
+</thead>
+
+  <tbody id="body"></tbody>
+</table>
+
+<div style="margin-top:40px; background:#d8dbff; padding:20px; border-radius:12px;">
+  <h2 style="text-align:center; margin-bottom:10px;">
+    2025 Previous Month & Current Month Comparison - Staff Wise
+  </h2>
+  <canvas id="prevCurrChart" height="120"></canvas>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const month = params.get("month");
+const staff = params.get("staff");
+
+document.getElementById("title").innerText =
+  staff && month
+    ? `Staff Wise Month Report – ${staff} (${month})`
+    : staff
+      ? `Staff Wise Booking Report – ${staff} (Jan – Dec)`
+      : "2025 Booking Status Report (Jan – Dec) - Staff Wise";
+
+
+
+Papa.parse(
+  "https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv",
+  {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: res => buildMonthTable(res.data)
+  }
+);
+
+function getDailyStatus(row) {
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "rough daily updation"
+  );
+  return key ? String(row[key]).toLowerCase() : "";
+}
+
+function getStaffName(row) {
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "staff name"
+  );
+  return key ? String(row[key]).trim() : "";
+}
+
+
+
+function buildMonthTable(data) {
+  const tbody = document.getElementById("body");
+  tbody.innerHTML = "";
+
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  let index = 1;
+  let prevMonthCount = null;
+  
+  const chartLabels = [];
+const chartValues = [];
+
+  
+  let totalOverallCount = 0;
+let totalOverallSqft = 0;
+
+let totalLiveCount = 0;
+let totalLiveSqft = 0;
+
+let totalCancelCount = 0;
+let totalCancelSqft = 0;
+  
+
+  months.forEach(m => {
+    if (month && m !== month) return; // 🔒 keeps single-month scenario
+
+    let overall = { c:0, s:0 };
+    let live = { c:0, s:0 };
+    let cancel = { c:0, s:0 };
+
+    data.forEach(row => {
+      const raw = row["BOOKING DATE"];
+      if (!raw) return;
+
+      const p = raw.split("-");
+      const d = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+      if (d.toLocaleString("default",{month:"long"}) !== m) return;
+	  
+	  const staffName = getStaffName(row);
+if (staff && staffName !== staff) return;
+
+
+      const sqft = Number(row["Actual TOTAL SQ-FT"] || 0);
+      <!-- const status = String(row["Rough Daily Updation"]||"").toLowerCase(); -->
+	  const status = getDailyStatus(row);
+
+
+      overall.c++; overall.s += sqft;
+
+      if (
+        status.includes("live") ||
+        status.includes("registration") ||
+        status.includes("agreement")
+      ) {
+        live.c++; live.s += sqft;
+      }
+      if (status.includes("cancel")) {
+        cancel.c++; cancel.s += sqft;
+      }
+	  
+    });
+
+    if (overall.c === 0) return;
+	totalOverallCount += overall.c;
+totalOverallSqft += overall.s;
+
+totalLiveCount += live.c;
+totalLiveSqft += live.s;
+
+totalCancelCount += cancel.c;
+totalCancelSqft += cancel.s;
+
+	
+	let prevCurrPct = "0%";
+
+if (prevMonthCount !== null && prevMonthCount > 0) {
+  prevCurrPct =
+    Math.round(((overall.c - prevMonthCount) / prevMonthCount) * 100) + "%";
+}
+
+chartLabels.push(m.substring(0, 3));
+chartValues.push(
+  parseInt(prevCurrPct.replace("%", ""))
+);
+
+
+const livePct   = overall.c ? Math.round((live.c / overall.c) * 100) : 0;
+const cancelPct = overall.c ? Math.round((cancel.c / overall.c) * 100) : 0;
+
+tbody.innerHTML += `
+<tr>
+  <td>${index++}</td>
+  <td>${m}</td>
+
+  <!-- Overall -->
+  <td>${overall.c}</td>
+  <td>${Math.round(overall.s)}</td>
+
+  <!-- Previous & Current Month -->
+  <td style="background:#fda4af; font-weight:700;">
+    ${prevCurrPct}
+  </td>
+
+  <!-- Overall Live -->
+  <td class="live">${live.c}</td>
+  <td class="live">${Math.round(live.s)}</td>
+  <td class="live">${livePct}%</td>
+
+  <!-- Cancel -->
+  <td class="cancel">${cancel.c}</td>
+  <td class="cancel">${Math.round(cancel.s)}</td>
+  <td class="cancel">${cancelPct}%</td>
+</tr>
+`;
+  prevMonthCount = overall.c;
+});
+
+/* 👇👇 ADD GRAND TOTAL CODE HERE 👇👇 */
+
+const totalLivePct = totalOverallCount
+  ? Math.round((totalLiveCount / totalOverallCount) * 100)
+  : 0;
+
+const totalCancelPct = totalOverallCount
+  ? Math.round((totalCancelCount / totalOverallCount) * 100)
+  : 0;
+
+tbody.innerHTML += `
+<tr style="font-weight:800;">
+  <td colspan="2" style="background:#cfe2f3;">Grand Total</td>
+
+  <td style="background:#e2e8f0;">${totalOverallCount}</td>
+  <td style="background:#e2e8f0;">${Math.round(totalOverallSqft)}</td>
+
+  <td style="background:#fda4af;"></td>
+
+  <td class="live">${totalLiveCount}</td>
+  <td class="live">${Math.round(totalLiveSqft)}</td>
+  <td class="live">${totalLivePct}%</td>
+
+  <td class="cancel">${totalCancelCount}</td>
+  <td class="cancel">${Math.round(totalCancelSqft)}</td>
+  <td class="cancel">${totalCancelPct}%</td>
+</tr>
+`;
+
+const ctx = document.getElementById("prevCurrChart").getContext("2d");
+
+new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: chartLabels,
+    datasets: [{
+      label: "Previous vs Current %",
+      data: chartValues,
+      borderColor: "#2563eb",
+      backgroundColor: "transparent",
+      tension: 0.4,
+      pointRadius: 6,
+      pointBackgroundColor: chartValues.map(v =>
+        v >= 0 ? "#22c55e" : "#ef4444"
+      )
+    }]
+  },
+  options: {
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ctx.raw + "%"
+        }
+      }
+    },
+    scales: {
+      y: {
+        ticks: {
+          callback: v => v + "%"
+        }
+      }
+    }
+  }
+});
+
+
+}
+</script>
+<script>
+document.getElementById("downloadMonthPdf").addEventListener("click", async () => {
+  const { jsPDF } = window.jspdf;
+
+  const button = document.getElementById("downloadMonthPdf");
+  const content = document.body;
+
+  // Hide button before capture
+  button.style.visibility = "hidden";
+  window.scrollTo(0, 0);
+
+  try {
+    const canvas = await html2canvas(content, {
+      scale: 2.5,
+      useCORS: true,
+      backgroundColor: "#f5f7fb",
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+    const pdfWidth = canvas.width * 0.264583;
+    const pdfHeight = canvas.height * 0.264583;
+
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? "l" : "p",
+      unit: "mm",
+      format: [pdfWidth, pdfHeight]
+    });
+
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
+    const now = new Date();
+    const fileName =
+      `Month_Wise_Booking_Report_${now.getDate()}_${now.getMonth()+1}_${now.getFullYear()}.pdf`;
+
+    pdf.save(fileName);
+
+  } catch (err) {
+    console.error("PDF error:", err);
+    alert("PDF download failed");
+  } finally {
+    button.style.visibility = "visible";
+  }
+});
+</script>
+</body>
+</html>

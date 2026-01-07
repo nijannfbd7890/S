@@ -225,49 +225,76 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
         totalHTML += "</tr>";
         document.getElementById("totalRow").innerHTML = totalHTML;
 
-        // YEAR SUMMARY CHART
-        const ctx = document.getElementById("yearChart").getContext("2d");
+       /* ----------------------
+   YEAR WISE CHART – SAME AS YEAR REPORT
+----------------------- */
 
-        new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: YEARS,
-                datasets: [
-                    {
-                        label: "Success",
-                        data: YEARS.map(y => totals[y].successSqft),
-                        backgroundColor: "#4CAF50"
-                    },
-                    {
-                        label: "Unsuccess",
-                        data: YEARS.map(y => totals[y].unsuccessSqft),
-                        backgroundColor: "#FF5252"
-                    }
-                ]
+const successCountArr = YEARS.map(y => totals[y].successCount);
+const unsuccessCountArr = YEARS.map(y => totals[y].unsuccessCount);
+
+const successSqftArr = YEARS.map(y => totals[y].successSqft);
+const unsuccessSqftArr = YEARS.map(y => totals[y].unsuccessSqft);
+
+// 1️⃣ Merge Count + SqFt (exact same format as Year Wise Report)
+const successMergedLabels = YEARS.map(y =>
+    `Success\nCount: ${totals[y].successCount}\nSqFt: ${totals[y].successSqft.toLocaleString()}`
+);
+
+const unsuccessMergedLabels = YEARS.map(y =>
+    `Unsuccess\nCount: ${totals[y].unsuccessCount}\nSqFt: ${totals[y].unsuccessSqft.toLocaleString()}`
+);
+
+// 2️⃣ Bar heights (SQFT based)
+const successBarHeights = successSqftArr;
+const unsuccessBarHeights = unsuccessSqftArr;
+
+// 3️⃣ Build Chart
+const ctx = document.getElementById("yearChart").getContext("2d");
+
+new Chart(ctx, {
+    type: "bar",
+    data: {
+        labels: YEARS,
+        datasets: [
+            {
+                label: "Success",
+                data: successBarHeights,
+                backgroundColor: "#4CAF50"
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: "top" },
-                    datalabels: {
-                        anchor: "end",
-                        align: "top",
-                        color: "#000",
-                        font: { weight: "bold", size: 14 },
-                        formatter: function(value) {
-                            return value.toLocaleString();
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { callback: v => v.toLocaleString() }
-                    }
+            {
+                label: "Unsuccess",
+                data: unsuccessBarHeights,
+                backgroundColor: "#FF5252"
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: "top" },
+            datalabels: {
+                anchor: "end",
+                align: "top",
+                color: "#000",
+                font: { weight: "bold", size: 14 },
+                formatter: function(_, ctx) {
+                    const i = ctx.dataIndex;
+                    return ctx.dataset.label === "Success"
+                        ? successMergedLabels[i]
+                        : unsuccessMergedLabels[i];
                 }
-            },
-            plugins: [ChartDataLabels]
-        });
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { callback: v => v.toLocaleString() }
+            }
+        }
+    },
+    plugins: [ChartDataLabels]
+});
+
 
     }
 });
