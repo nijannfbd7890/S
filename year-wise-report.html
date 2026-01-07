@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <title>Year Wise Team Pivot</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+
+
 
 <style>
   body {
@@ -21,7 +27,6 @@
     gap: 10px;
   }
 
-  /* Scrollable wrapper */
   .table-container {
     max-width: 100%;
     overflow-x: auto;
@@ -36,7 +41,6 @@
     min-width: 1500px;
   }
 
-  /* Sticky top header */
   thead th {
     position: sticky;
     top: 0;
@@ -44,21 +48,18 @@
     text-align: center;
   }
 
-  /* Year header */
   thead tr:first-child th {
     background: #dfe6f2;
     font-size: 15px;
     padding: 10px;
   }
 
-  /* Success / UnSuccess */
   thead tr:nth-child(2) th {
     background: #eef2f9;
     padding: 6px;
     font-size: 14px;
   }
 
-  /* Count / SqFt row */
   thead tr:nth-child(3) th {
     background: #f7f9fc;
     padding: 6px;
@@ -79,22 +80,27 @@
     border-bottom: 1px solid #eef0f3;
   }
 
-  /* Team name left aligned */
   td:nth-child(2) {
     text-align: left;
     font-weight: 600;
     white-space: nowrap;
   }
 
-  /* Row hover */
   tbody tr:hover {
     background: #f1f6ff;
     transition: 0.2s;
   }
 
-  /* Zebra effect */
   tbody tr:nth-child(even) {
     background: #fafbfd;
+  }
+
+  /* Grand Total Row Styling */
+  .grand-total {
+    background: #d7efff !important;
+    font-weight: 800;
+    font-size: 14px;
+    border-top: 2px solid #000;
   }
 </style>
 
@@ -145,8 +151,12 @@
   </tr>
 </thead>
 <tbody id="pivotBody"></tbody>
+<tbody id="totalRow"></tbody>
 </table>
 </div>
+
+<h2>📊 Year Wise Comparison – Summary</h2>
+<canvas id="yearChart" height="140"></canvas>
 
 <script>
 Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
@@ -159,8 +169,8 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
         const data = res.data;
         const norm = s => String(s).toLowerCase().trim();
 
-        // Auto-detect columns
         const headers = Object.keys(data[0]);
+
         const COL_TEAM  = headers.find(h => norm(h) === "team name");
         const COL_YEAR  = headers.find(h => norm(h) === "year");
         const COL_SQFT  = headers.find(h => norm(h) === "actual total sq-ft");
@@ -171,6 +181,17 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
         const teams = [...new Set(data.map(r => r[COL_TEAM]).filter(Boolean))];
 
         const result = {};
+        const totals = {};
+
+        YEARS.forEach(year => {
+            totals[year] = {
+                successCount: 0,
+                successSqft: 0,
+                unsuccessCount: 0,
+                unsuccessSqft: 0
+            };
+        });
+
         teams.forEach(team => {
             result[team] = {};
             YEARS.forEach(year => {
@@ -190,11 +211,11 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
             return "none";
         }
 
-        // Process rows
         data.forEach(row => {
             const team = row[COL_TEAM];
             const year = String(row[COL_YEAR]).trim();
             const sqft = Math.round(Number(row[COL_SQFT]) || 0);
+
             if (!team || !YEARS.includes(year)) return;
 
             const status = getStatus(row);
@@ -202,39 +223,144 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
             if (status === "success") {
                 result[team][year].successCount++;
                 result[team][year].successSqft += sqft;
+
+                totals[year].successCount++;
+                totals[year].successSqft += sqft;
             }
+
             if (status === "unsuccess") {
                 result[team][year].unsuccessCount++;
                 result[team][year].unsuccessSqft += sqft;
+
+                totals[year].unsuccessCount++;
+                totals[year].unsuccessSqft += sqft;
             }
         });
 
-        // Render output
         const body = document.getElementById("pivotBody");
         let i = 1;
 
         teams.forEach(team => {
-            let row = `<tr>
+            let tr = `<tr>
                 <td>${i++}</td>
-                <td>${team}</td>
-            `;
+                <td>${team}</td>`;
 
             YEARS.forEach(year => {
                 const r = result[team][year];
-                row += `
+                tr += `
                     <td>${r.successCount}</td>
                     <td>${r.successSqft}</td>
                     <td>${r.unsuccessCount}</td>
-                    <td>${r.unsuccessSqft}</td>
-                `;
+                    <td>${r.unsuccessSqft}</td>`;
             });
 
-            row += "</tr>";
-            body.innerHTML += row;
+            tr += "</tr>";
+            body.innerHTML += tr;
         });
+
+        /* ----------------------
+           ADD GRAND TOTAL ROW  
+        ----------------------- */
+
+        let totalHTML = `<tr class="grand-total">
+            <td></td>
+            <td>Grand Total</td>`;
+
+        YEARS.forEach(year => {
+            const t = totals[year];
+            totalHTML += `
+                <td>${t.successCount}</td>
+                <td>${t.successSqft}</td>
+                <td>${t.unsuccessCount}</td>
+                <td>${t.unsuccessSqft}</td>`;
+        });
+
+        totalHTML += "</tr>";
+
+        document.getElementById("totalRow").innerHTML = totalHTML;
+		
+		/* ----------------------
+      YEAR WISE CHARTS
+----------------------- */
+
+// Prepare arrays
+const yearsArr = YEARS;
+
+const successCountArr = YEARS.map(y => totals[y].successCount);
+const unsuccessCountArr = YEARS.map(y => totals[y].unsuccessCount);
+
+const successSqftArr = YEARS.map(y => totals[y].successSqft);
+const unsuccessSqftArr = YEARS.map(y => totals[y].unsuccessSqft);
+
+
+// ------------------------------------------------------
+// YEAR WISE SUMMARY CHART (Success & Unsuccess Combined)
+// ------------------------------------------------------
+
+// 1️⃣ Merge Count + SqFt into a single label
+const successMergedLabels = YEARS.map(y =>
+    `Success\nCount: ${totals[y].successCount}\nSqFt: ${totals[y].successSqft.toLocaleString()}`
+);
+
+const unsuccessMergedLabels = YEARS.map(y =>
+    `Unsuccess\nCount: ${totals[y].unsuccessCount}\nSqFt: ${totals[y].unsuccessSqft.toLocaleString()}`
+);
+
+// 2️⃣ Bar HEIGHT = SqFt value (you can change to count if needed)
+const successBarHeights = YEARS.map(y => totals[y].successSqft);
+const unsuccessBarHeights = YEARS.map(y => totals[y].unsuccessSqft);
+
+// 3️⃣ Build chart
+const ctx = document.getElementById("yearChart").getContext("2d");
+
+new Chart(ctx, {
+    type: "bar",
+    data: {
+        labels: YEARS,
+        datasets: [
+            {
+                label: "Success",
+                data: successBarHeights,
+                backgroundColor: "#4CAF50"
+            },
+            {
+                label: "Unsuccess",
+                data: unsuccessBarHeights,
+                backgroundColor: "#FF5252"
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: "top" },
+            datalabels: {
+                anchor: "end",
+                align: "top",
+                color: "#000",
+                font: { weight: "bold", size: 14 },
+                formatter: function(value, ctx) {
+                    const i = ctx.dataIndex;
+                    return ctx.dataset.label === "Success"
+                        ? successMergedLabels[i]
+                        : unsuccessMergedLabels[i];
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { callback: v => v.toLocaleString() }
+            }
+        }
+    },
+    plugins: [ChartDataLabels]
+});
+
+
+
     }
 });
 </script>
-
 </body>
 </html>

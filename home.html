@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Booking Status Reports</title>
+
+<style>
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #f5f7fb;
+    margin: 0;
+    padding: 40px;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: auto;
+  }
+
+  h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    color: #0f172a;
+  }
+
+  p.subtitle {
+    color: #64748b;
+    margin-bottom: 40px;
+    font-size: 15px;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 20px 35px rgba(15,23,42,0.08);
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+  }
+
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 28px 45px rgba(15,23,42,0.12);
+  }
+
+  .icon {
+    font-size: 42px;
+    margin-bottom: 14px;
+  }
+
+  .card h2 {
+    font-size: 22px;
+    margin: 0 0 8px;
+    color: #0f172a;
+  }
+
+  .card p {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .team {
+    border-left: 6px solid #4f8cff;
+  }
+
+  .staff {
+  border-left: 6px solid #22c55e;
+}
+
+
+  .badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .live {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .coming {
+    background: #e5e7eb;
+    color: #374151;
+  }
+
+  @media (max-width: 720px) {
+    .cards {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .summary {
+  border-left: 6px solid #f59e0b; /* Amber */
+}
+
+.region {
+  border-left: 6px solid #6366f1; /* Indigo */
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Booking Status Reports</h1>
+  <p class="subtitle">
+    Choose the type of report you want to view
+  </p>
+
+  <div class="cards">
+
+    <!-- TEAM WISE -->
+    <div class="card team" onclick="openTeamReport()">
+      <span class="badge live">LIVE</span>
+      <div class="icon">👥</div>
+      <h2>Team Wise Report</h2>
+      <p>
+        View booking performance across teams with
+        monthly trends, live vs cancel analysis,
+        charts and PDF export.
+      </p>
+    </div>
+
+    <!-- STAFF WISE -->
+    <!-- <div class="card staff" onclick="openStaffReport()"> -->
+      <!-- <span class="badge coming">COMING SOON</span> -->
+	  <div class="card staff" onclick="openStaffReport()">
+	 <span class="badge live">LIVE</span>
+      <div class="icon">🧑‍💼</div>
+      <h2>Staff Wise Report</h2>
+      <p>
+        Individual staff performance report with
+        booking count, SQ-FT contribution and status
+        analysis.
+      </p>
+    </div>
+	<!-- MONTHLY SUMMARY REPORT -->
+<div class="card summary" onclick="openYearwiseReport()">
+  <span class="badge live">LIVE</span>
+  <div class="icon">📊</div>
+  <h2>Yearly Summary Report</h2>
+  <p>
+    View monthly booking summary, trend comparison,
+    revenue indicators, and monthly performance charts.
+  </p>
+</div>
+
+<!-- REGION WISE REPORT -->
+<div class="card region" onclick="openRegionReport()">
+  <span class="badge live">LIVE</span>
+  <div class="icon">🌍</div>
+  <h2>Region Wise Report</h2>
+  <p>
+    Analyze booking performance across regions with
+    heatmaps, distribution comparison, and growth insights.
+  </p>
+</div>
+
+  </div>
+</div>
+
+<script>
+function openTeamReport() {
+  window.location.href = "index.html";
+}
+
+function openStaffReport() {
+  window.location.href = "staff-index.html";
+}
+function openYearwiseReport() {
+  window.location.href = "year-wise-report.html";
+}
+
+</script>
+</body>
+</html>
