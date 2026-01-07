@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Year Wise Team Pivot</title>
+
+<style>
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: #eef3f9;
+    padding: 20px 30px;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Scrollable wrapper */
+  .table-container {
+    max-width: 100%;
+    overflow-x: auto;
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    background: white;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1500px;
+  }
+
+  /* Sticky top header */
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    text-align: center;
+  }
+
+  /* Year header */
+  thead tr:first-child th {
+    background: #dfe6f2;
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  /* Success / UnSuccess */
+  thead tr:nth-child(2) th {
+    background: #eef2f9;
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  /* Count / SqFt row */
+  thead tr:nth-child(3) th {
+    background: #f7f9fc;
+    padding: 6px;
+    font-size: 13px;
+  }
+
+  th {
+    font-weight: 700;
+    color: #1e293b;
+    border-bottom: 1px solid #d6d9e0;
+  }
+
+  td {
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 13px;
+    color: #334155;
+    border-bottom: 1px solid #eef0f3;
+  }
+
+  /* Team name left aligned */
+  td:nth-child(2) {
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Row hover */
+  tbody tr:hover {
+    background: #f1f6ff;
+    transition: 0.2s;
+  }
+
+  /* Zebra effect */
+  tbody tr:nth-child(even) {
+    background: #fafbfd;
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+
+<body>
+
+<h2>📊 Team Wise – Year Comparison</h2>
+
+<div class="table-container">
+<table>
+<thead>
+  <tr>
+    <th rowspan="3">#</th>
+    <th rowspan="3">Team Name</th>
+
+    <th colspan="4">2025</th>
+    <th colspan="4">2024</th>
+    <th colspan="4">2023</th>
+    <th colspan="4">2022</th>
+    <th colspan="4">2021</th>
+  </tr>
+
+  <tr>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+    <th colspan="2">Success</th><th colspan="2">Unsuccess</th>
+  </tr>
+
+  <tr>
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+
+    <th>Count</th><th>Sq Ft</th>
+    <th>Count</th><th>Sq Ft</th>
+  </tr>
+</thead>
+<tbody id="pivotBody"></tbody>
+</table>
+</div>
+
+<script>
+Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+
+    complete: function(res) {
+
+        const data = res.data;
+        const norm = s => String(s).toLowerCase().trim();
+
+        // Auto-detect columns
+        const headers = Object.keys(data[0]);
+        const COL_TEAM  = headers.find(h => norm(h) === "team name");
+        const COL_YEAR  = headers.find(h => norm(h) === "year");
+        const COL_SQFT  = headers.find(h => norm(h) === "actual total sq-ft");
+        const COL_STATUS = headers.find(h => norm(h) === "daily updation");
+
+        const YEARS = ["2025", "2024", "2023", "2022", "2021"];
+
+        const teams = [...new Set(data.map(r => r[COL_TEAM]).filter(Boolean))];
+
+        const result = {};
+        teams.forEach(team => {
+            result[team] = {};
+            YEARS.forEach(year => {
+                result[team][year] = {
+                    successCount: 0,
+                    successSqft: 0,
+                    unsuccessCount: 0,
+                    unsuccessSqft: 0
+                };
+            });
+        });
+
+        function getStatus(row) {
+            let s = norm(row[COL_STATUS]);
+            if (s === "success") return "success";
+            if (s === "unsuccess") return "unsuccess";
+            return "none";
+        }
+
+        // Process rows
+        data.forEach(row => {
+            const team = row[COL_TEAM];
+            const year = String(row[COL_YEAR]).trim();
+            const sqft = Math.round(Number(row[COL_SQFT]) || 0);
+            if (!team || !YEARS.includes(year)) return;
+
+            const status = getStatus(row);
+
+            if (status === "success") {
+                result[team][year].successCount++;
+                result[team][year].successSqft += sqft;
+            }
+            if (status === "unsuccess") {
+                result[team][year].unsuccessCount++;
+                result[team][year].unsuccessSqft += sqft;
+            }
+        });
+
+        // Render output
+        const body = document.getElementById("pivotBody");
+        let i = 1;
+
+        teams.forEach(team => {
+            let row = `<tr>
+                <td>${i++}</td>
+                <td>${team}</td>
+            `;
+
+            YEARS.forEach(year => {
+                const r = result[team][year];
+                row += `
+                    <td>${r.successCount}</td>
+                    <td>${r.successSqft}</td>
+                    <td>${r.unsuccessCount}</td>
+                    <td>${r.unsuccessSqft}</td>
+                `;
+            });
+
+            row += "</tr>";
+            body.innerHTML += row;
+        });
+    }
+});
+</script>
+
+</body>
+</html>
