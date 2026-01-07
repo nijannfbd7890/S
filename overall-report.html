@@ -1,48 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Performance Dashboard</title>
 
-    <!-- Bootstrap -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-
-    <!-- DataTables -->
-    <link rel="stylesheet"
-          href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 
     <style>
-        body { background:#f5f7fa; padding:20px; }
-        .card { border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
-        .dashboard-title { font-size:28px; font-weight:bold; margin-bottom:20px; }
-        table.dataTable th { background:#e1e7ef; }
+        body { background: #f5f7fa; padding: 20px; }
+        .card { border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .dashboard-title { font-size: 28px; font-weight: bold; margin-bottom: 20px; }
+        
+        .kpi-box {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .kpi-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .kpi-label {
+            font-size: 14px;
+            color: #555;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="container">
     <div class="dashboard-title">📊 Performance Dashboard</div>
 
-    <!-- Data Table -->
-    <div class="card p-4 mb-4">
-        <h4>Overall Summary Table</h4>
-        <table id="summary" class="table table-striped" style="width:100%">
-            <thead></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <!-- Charts -->
     <div class="row">
+
+        <!-- LEFT SIDE: CASH/LOAN COUNTS -->
         <div class="col-md-6">
+
+            <!-- KPI SECTION -->
+            <div id="countKPI" class="row mb-2"></div>
+
             <div class="card p-4 mb-4">
                 <h5>Cash vs Loan Count</h5>
                 <canvas id="countChart"></canvas>
             </div>
         </div>
+
+        <!-- RIGHT SIDE: SQFT -->
         <div class="col-md-6">
+
+            <!-- KPI SECTION -->
+            <div id="sqftKPI" class="row mb-2"></div>
+
             <div class="card p-4 mb-4">
                 <h5>Total SQ-FT by Year</h5>
                 <canvas id="sqftChart"></canvas>
@@ -50,71 +64,176 @@
         </div>
     </div>
 
+    <!-- 🔵 NEW SECTION: CHART A (Success vs UnSuccess Count from Pivot.csv) -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card p-4 mb-4">
+                <h5>Success vs UnSuccess Count (Pivot Summary)</h5>
+                <canvas id="pivotCountChart"></canvas>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- JS Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-
 <script>
-// Load CSV from GitHub
+/* ----------------------------------------------------------------------
+   ORIGINAL CODE — Read Overall.csv and build your original dashboard
+---------------------------------------------------------------------- */
 Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
     download: true,
     header: true,
     dynamicTyping: true,
     complete: function(results) {
 
-        const data = results.data;
+        const rows = results.data;
 
-        // Build table headers
-        const columns = Object.keys(data[0]);
-        let thead = "<tr>";
-        columns.forEach(c => { thead += `<th>${c}</th>`; });
-        thead += "</tr>";
-        document.querySelector("#summary thead").innerHTML = thead;
+        let summary = {};
 
-        // Build table rows
-        let tbody = "";
-        data.forEach(row => {
-            tbody += "<tr>";
-            columns.forEach(c => tbody += `<td>${row[c]}</td>`);
-            tbody += "</tr>";
+        let totalCash = 0;
+        let totalLoan = 0;
+        let totalSqftAll = 0;
+
+        rows.forEach(row => {
+            const year = row["Year"];
+            const sqFt = parseFloat(row["Actual TOTAL SQ-FT"]) || 0;
+            const cashLoan = (row["CASH/LOAN"] || "").toString().trim().toUpperCase();
+
+            if (!year) return;
+
+            if (!summary[year]) {
+                summary[year] = {
+                    cashCount: 0,
+                    loanCount: 0,
+                    totalSqFt: 0
+                };
+            }
+
+            if (cashLoan === "CASH") {
+                summary[year].cashCount++;
+                totalCash++;
+            }
+
+            if (cashLoan === "LOAN") {
+                summary[year].loanCount++;
+                totalLoan++;
+            }
+
+            summary[year].totalSqFt += sqFt;
+            totalSqftAll += sqFt;
         });
-        document.querySelector("#summary tbody").innerHTML = tbody;
 
-        // Activate DataTable
-        $('#summary').DataTable();
+        const years = Object.keys(summary);
+        const cashCounts = years.map(y => summary[y].cashCount);
+        const loanCounts = years.map(y => summary[y].loanCount);
+        const totalSqFt = years.map(y => summary[y].totalSqFt);
 
-        // Extract Chart Data
-        const years = data.map(r => r['Row Labels']);
-        const cashCount = data.map(r => r['Cash Count']);
-        const loanCount = data.map(r => r['Loan Count']);
-        const totalSqft = data.map(r => r['Total SQ-FT']);
+        const totalCount = totalCash + totalLoan;
 
-        // CHART 1 - Cash vs Loan Count
-        new Chart(document.getElementById('countChart'), {
-            type: 'bar',
+        // KPI BOXES
+        document.getElementById("countKPI").innerHTML = `
+            <div class="col-md-4 kpi-box">
+                <div class="kpi-value">${totalCount}</div>
+                <div class="kpi-label">Overall Count</div>
+            </div>
+            <div class="col-md-4 kpi-box">
+                <div class="kpi-value">${totalCash}</div>
+                <div class="kpi-label">Total Cash Count</div>
+            </div>
+            <div class="col-md-4 kpi-box">
+                <div class="kpi-value">${totalLoan}</div>
+                <div class="kpi-label">Total Loan Count</div>
+            </div>
+        `;
+
+        document.getElementById("sqftKPI").innerHTML = `
+            <div class="col-md-4 kpi-box">
+                <div class="kpi-value">${totalSqftAll.toLocaleString()}</div>
+                <div class="kpi-label">Total SQ-FT</div>
+            </div>
+            <div class="col-md-4 kpi-box">
+                <div class="kpi-value">${Math.round(totalSqftAll / years.length).toLocaleString()}</div>
+                <div class="kpi-label">Avg SQ-FT / Year</div>
+            </div>
+            <div class="col-md-4 kpi-box">
+                <div class="kpi-value">${Math.max(...totalSqFt).toLocaleString()}</div>
+                <div class="kpi-label">Highest Year SQ-FT</div>
+            </div>
+        `;
+
+        // CHART 1 — Cash vs Loan Count
+        new Chart(document.getElementById("countChart"), {
+            type: "bar",
             data: {
                 labels: years,
                 datasets: [
-                    { label: "Cash Count", data: cashCount },
-                    { label: "Loan Count", data: loanCount }
+                    { label: "Cash Count", data: cashCounts, backgroundColor: "#8ec9ff" },
+                    { label: "Loan Count", data: loanCounts, backgroundColor: "#ffb3c6" }
                 ]
             }
         });
 
-        // CHART 2 - Total SQ-FT by Year
-        new Chart(document.getElementById('sqftChart'), {
-            type: 'line',
+        // CHART 2 — Total SQ-FT
+        new Chart(document.getElementById("sqftChart"), {
+            type: "line",
             data: {
                 labels: years,
                 datasets: [
-                    { label: "Total SQ-FT", data: totalSqft }
+                    { label: "Total SQ-FT", data: totalSqFt, borderWidth: 3, borderColor: "#1d8cff" }
                 ]
+            }
+        });
+    }
+});
+
+
+/* ----------------------------------------------------------------------
+   🔵 NEW CODE — Read Pivot.csv and build Chart A
+---------------------------------------------------------------------- */
+
+Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", {
+    download: true,
+    header: true,
+    dynamicTyping: true,
+    complete: function(results) {
+
+        const pivot = results.data;
+
+        let years = [];
+        let success = [];
+        let unsuccess = [];
+
+        pivot.forEach(r => {
+            if (!r.Year) return;
+            years.push(r.Year);
+            success.push(r.Success_Count);
+            unsuccess.push(r.UnSuccess_Count);
+        });
+
+        // Chart A — Success vs UnSuccess Count
+        new Chart(document.getElementById("pivotCountChart"), {
+            type: "bar",
+            data: {
+                labels: years,
+                datasets: [
+                    {
+                        label: "Success Count",
+                        data: success,
+                        backgroundColor: "#4cb3ff"
+                    },
+                    {
+                        label: "UnSuccess Count",
+                        data: unsuccess,
+                        backgroundColor: "#ff738a"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
             }
         });
     }
