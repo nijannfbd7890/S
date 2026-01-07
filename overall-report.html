@@ -11,7 +11,7 @@
         body { background: #f5f7fa; padding: 20px; }
         .card { border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
         .dashboard-title { font-size: 28px; font-weight: bold; margin-bottom: 20px; }
-        
+
         .kpi-box {
             background: white;
             padding: 15px;
@@ -41,8 +41,6 @@
 
         <!-- LEFT SIDE: CASH/LOAN COUNTS -->
         <div class="col-md-6">
-
-            <!-- KPI SECTION -->
             <div id="countKPI" class="row mb-2"></div>
 
             <div class="card p-4 mb-4">
@@ -53,8 +51,6 @@
 
         <!-- RIGHT SIDE: SQFT -->
         <div class="col-md-6">
-
-            <!-- KPI SECTION -->
             <div id="sqftKPI" class="row mb-2"></div>
 
             <div class="card p-4 mb-4">
@@ -64,25 +60,51 @@
         </div>
     </div>
 
-    <!-- 🔵 NEW SECTION: CHART A (Success vs UnSuccess Count from Pivot.csv) -->
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card p-4 mb-4">
-                <h5>Success vs UnSuccess Count (Pivot Summary)</h5>
-                <canvas id="pivotCountChart"></canvas>
+    <!-- SUMMARY BOXES FOR PIVOT -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="kpi-box text-center">
+                <h6>Overall</h6>
+                <div>Count: <span id="overallCount">0</span></div>
+                <div>Sqft: <span id="overallSqft">0</span></div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-box text-center">
+                <h6>Success</h6>
+                <div>Count: <span id="successCount">0</span></div>
+                <div>Sqft: <span id="successSqft">0</span></div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-box text-center">
+                <h6>UnSuccess</h6>
+                <div>Count: <span id="unsuccessCount">0</span></div>
+                <div>Sqft: <span id="unsuccessSqft">0</span></div>
             </div>
         </div>
     </div>
 
+    <!-- PIVOT CHART -->
+    <div class="card p-4 mb-4">
+        <h5>Success vs UnSuccess Count (Pivot Summary)</h5>
+        <canvas id="pivotCountChart"></canvas>
+    </div>
+
 </div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
 
 <script>
-/* ----------------------------------------------------------------------
-   ORIGINAL CODE — Read Overall.csv and build your original dashboard
----------------------------------------------------------------------- */
+/* -----------------------------------------------------------
+   LOAD Overall.csv (Your original two charts)
+----------------------------------------------------------- */
 Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
     download: true,
     header: true,
@@ -90,37 +112,20 @@ Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
     complete: function(results) {
 
         const rows = results.data;
-
         let summary = {};
-
-        let totalCash = 0;
-        let totalLoan = 0;
-        let totalSqftAll = 0;
+        let totalCash = 0, totalLoan = 0, totalSqftAll = 0;
 
         rows.forEach(row => {
             const year = row["Year"];
             const sqFt = parseFloat(row["Actual TOTAL SQ-FT"]) || 0;
-            const cashLoan = (row["CASH/LOAN"] || "").toString().trim().toUpperCase();
+            const cashLoan = (row["CASH/LOAN"] || "").toUpperCase();
 
             if (!year) return;
 
-            if (!summary[year]) {
-                summary[year] = {
-                    cashCount: 0,
-                    loanCount: 0,
-                    totalSqFt: 0
-                };
-            }
+            if (!summary[year]) summary[year] = { cashCount: 0, loanCount: 0, totalSqFt: 0 };
 
-            if (cashLoan === "CASH") {
-                summary[year].cashCount++;
-                totalCash++;
-            }
-
-            if (cashLoan === "LOAN") {
-                summary[year].loanCount++;
-                totalLoan++;
-            }
+            if (cashLoan === "CASH") { summary[year].cashCount++; totalCash++; }
+            if (cashLoan === "LOAN") { summary[year].loanCount++; totalLoan++; }
 
             summary[year].totalSqFt += sqFt;
             totalSqftAll += sqFt;
@@ -133,109 +138,105 @@ Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
 
         const totalCount = totalCash + totalLoan;
 
-        // KPI BOXES
         document.getElementById("countKPI").innerHTML = `
-            <div class="col-md-4 kpi-box">
-                <div class="kpi-value">${totalCount}</div>
-                <div class="kpi-label">Overall Count</div>
-            </div>
-            <div class="col-md-4 kpi-box">
-                <div class="kpi-value">${totalCash}</div>
-                <div class="kpi-label">Total Cash Count</div>
-            </div>
-            <div class="col-md-4 kpi-box">
-                <div class="kpi-value">${totalLoan}</div>
-                <div class="kpi-label">Total Loan Count</div>
-            </div>
+            <div class="col-md-4 kpi-box"><div class="kpi-value">${totalCount}</div><div class="kpi-label">Overall Count</div></div>
+            <div class="col-md-4 kpi-box"><div class="kpi-value">${totalCash}</div><div class="kpi-label">Cash Count</div></div>
+            <div class="col-md-4 kpi-box"><div class="kpi-value">${totalLoan}</div><div class="kpi-label">Loan Count</div></div>
         `;
 
         document.getElementById("sqftKPI").innerHTML = `
-            <div class="col-md-4 kpi-box">
-                <div class="kpi-value">${totalSqftAll.toLocaleString()}</div>
-                <div class="kpi-label">Total SQ-FT</div>
-            </div>
-            <div class="col-md-4 kpi-box">
-                <div class="kpi-value">${Math.round(totalSqftAll / years.length).toLocaleString()}</div>
-                <div class="kpi-label">Avg SQ-FT / Year</div>
-            </div>
-            <div class="col-md-4 kpi-box">
-                <div class="kpi-value">${Math.max(...totalSqFt).toLocaleString()}</div>
-                <div class="kpi-label">Highest Year SQ-FT</div>
-            </div>
+            <div class="col-md-4 kpi-box"><div class="kpi-value">${totalSqftAll.toLocaleString()}</div><div>Total SQ-FT</div></div>
+            <div class="col-md-4 kpi-box"><div class="kpi-value">${Math.round(totalSqftAll / years.length).toLocaleString()}</div><div>Avg SQ-FT</div></div>
+            <div class="col-md-4 kpi-box"><div class="kpi-value">${Math.max(...totalSqFt).toLocaleString()}</div><div>Highest SQ-FT</div></div>
         `;
 
-        // CHART 1 — Cash vs Loan Count
         new Chart(document.getElementById("countChart"), {
             type: "bar",
-            data: {
-                labels: years,
-                datasets: [
-                    { label: "Cash Count", data: cashCounts, backgroundColor: "#8ec9ff" },
-                    { label: "Loan Count", data: loanCounts, backgroundColor: "#ffb3c6" }
-                ]
-            }
+            data: { labels: years, datasets: [
+                { label: "Cash Count", data: cashCounts, backgroundColor: "#8ec9ff" },
+                { label: "Loan Count", data: loanCounts, backgroundColor: "#ffb3c6" }
+            ]}
         });
 
-        // CHART 2 — Total SQ-FT
         new Chart(document.getElementById("sqftChart"), {
             type: "line",
-            data: {
-                labels: years,
-                datasets: [
-                    { label: "Total SQ-FT", data: totalSqFt, borderWidth: 3, borderColor: "#1d8cff" }
-                ]
-            }
+            data: { labels: years, datasets: [
+                { label: "Total SQ-FT", data: totalSqFt, borderColor: "#007bff", borderWidth: 3 }
+            ]}
         });
+
     }
 });
+<!-- Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", { -->
 
-
-/* ----------------------------------------------------------------------
-   🔵 NEW CODE — Read Pivot.csv and build Chart A
----------------------------------------------------------------------- */
-
+/* -----------------------------------------------------------
+   LOAD Pivot.csv (Success / UnSuccess / Overall summary)
+----------------------------------------------------------- */
 Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", {
     download: true,
     header: true,
     dynamicTyping: true,
     complete: function(results) {
 
-        const pivot = results.data;
+        const rows = results.data;
 
-        let years = [];
-        let success = [];
-        let unsuccess = [];
+        let years = ["2021", "2022", "2023", "2024", "2025"];
+        let successTotals = [0,0,0,0,0];
+        let unsuccessTotals = [0,0,0,0,0];
+        let overallTotals = [0,0,0,0,0];
 
-        pivot.forEach(r => {
-            if (!r.Year) return;
-            years.push(r.Year);
-            success.push(r.Success_Count);
-            unsuccess.push(r.UnSuccess_Count);
+        let totalSuccess = 0, totalUnsuccess = 0;
+        let totalSuccessSqft = 0, totalUnsuccessSqft = 0;
+
+        rows.forEach(row => {
+            years.forEach((y,i) => {
+
+                // Corrected column names based on your file
+                let s = parseInt(row[`${y} Success`]) || 0;
+                let u = parseInt(row[`${y} UnSuccess`]) || 0;
+
+                let ss = parseFloat(row[`${y} Success Sqft`]) || 0;
+                let us = parseFloat(row[`${y} UnSuccess Sqft`]) || 0;
+
+                successTotals[i] += s;
+                unsuccessTotals[i] += u;
+                overallTotals[i] += (s + u);
+
+                totalSuccess += s;
+                totalUnsuccess += u;
+
+                totalSuccessSqft += ss;
+                totalUnsuccessSqft += us;
+            });
         });
 
-        // Chart A — Success vs UnSuccess Count
+        // Update summary boxes
+        document.getElementById("overallCount").innerText = totalSuccess + totalUnsuccess;
+        document.getElementById("overallSqft").innerText = (totalSuccessSqft + totalUnsuccessSqft).toLocaleString();
+
+        document.getElementById("successCount").innerText = totalSuccess;
+        document.getElementById("successSqft").innerText = totalSuccessSqft.toLocaleString();
+
+        document.getElementById("unsuccessCount").innerText = totalUnsuccess;
+        document.getElementById("unsuccessSqft").innerText = totalUnsuccessSqft.toLocaleString();
+
+        // Chart
         new Chart(document.getElementById("pivotCountChart"), {
             type: "bar",
             data: {
                 labels: years,
                 datasets: [
-                    {
-                        label: "Success Count",
-                        data: success,
-                        backgroundColor: "#4cb3ff"
-                    },
-                    {
-                        label: "UnSuccess Count",
-                        data: unsuccess,
-                        backgroundColor: "#ff738a"
-                    }
+                    { label: "Success Count", data: successTotals, backgroundColor: "#4cb3ff" },
+                    { label: "UnSuccess Count", data: unsuccessTotals, backgroundColor: "#ff738a" },
+                    { label: "Overall Count", data: overallTotals, backgroundColor: "#55cc66" }
                 ]
-            },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true } }
             }
         });
+
+    }
+});
+
+
     }
 });
 </script>
