@@ -2,204 +2,308 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Booking Status Reports</title>
+<title>Booking Status Reports – Premium Glass Dashboard</title>
 
 <style>
-  body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    background: #f5f7fb;
-    margin: 0;
-    padding: 40px;
-  }
-
-  .container {
-    max-width: 900px;
-    margin: auto;
-  }
-
-  h1 {
-    font-size: 36px;
-    margin-bottom: 10px;
-    color: #0f172a;
-  }
-
-  p.subtitle {
-    color: #64748b;
-    margin-bottom: 40px;
-    font-size: 15px;
-  }
-
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 30px;
-  }
-
-  .card {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 28px;
-    box-shadow: 0 20px 35px rgba(15,23,42,0.08);
-    cursor: pointer;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    position: relative;
-  }
-
-  .card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 28px 45px rgba(15,23,42,0.12);
-  }
-
-  .icon {
-    font-size: 42px;
-    margin-bottom: 14px;
-  }
-
-  .card h2 {
-    font-size: 22px;
-    margin: 0 0 8px;
-    color: #0f172a;
-  }
-
-  .card p {
-    color: #64748b;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .team {
-    border-left: 6px solid #4f8cff;
-  }
-
-  .staff {
-  border-left: 6px solid #22c55e;
+/* ----------------------------------------------------
+   BACKGROUND – Animated Gradient + Particles
+------------------------------------------------------ */
+body {
+  margin: 0;
+  padding: 40px;
+  font-family: "Segoe UI", sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #dbeafe, #e9d5ff, #ffe4e6);
+  background-size: 300% 300%;
+  animation: gradientShift 12s ease infinite;
 }
 
-
-  .badge {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-weight: 600;
-  }
-
-  .live {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  .coming {
-    background: #e5e7eb;
-    color: #374151;
-  }
-
-  @media (max-width: 720px) {
-    .cards {
-      grid-template-columns: 1fr;
-    }
-  }
-  
-  .summary {
-  border-left: 6px solid #f59e0b; /* Amber */
+/* Animated gradient */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-.region {
-  border-left: 6px solid #6366f1; /* Indigo */
+/* Floating particles */
+.particle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  filter: blur(4px);
+  animation: floatUp linear infinite;
 }
 
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 0.6; }
+  100% { transform: translateY(-180px); opacity: 0; }
+}
+
+/* Generate random particles */
+.particle:nth-child(odd) { width: 12px; height: 12px; animation-duration: 10s; }
+.particle:nth-child(even) { width: 18px; height: 18px; animation-duration: 14s; }
+
+/* ----------------------------------------------------
+   HEADER NAVBAR – Glassmorphism
+------------------------------------------------------ */
+.navbar {
+  width: 100%;
+  padding: 18px 28px;
+  border-radius: 18px;
+  margin-bottom: 40px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(18px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.navbar button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.5);
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.navbar button:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.05);
+}
+
+/* ----------------------------------------------------
+   TITLES
+------------------------------------------------------ */
+.container {
+  max-width: 1000px;
+  margin: auto;
+}
+
+h1 {
+  font-size: 38px;
+  color: #0f172a;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  animation: fadeInUp .8s ease;
+}
+
+.subtitle {
+  color: #334155;
+  margin-bottom: 30px;
+  animation: fadeInUp 1s ease;
+}
+
+/* ----------------------------------------------------
+   CARD GRID
+------------------------------------------------------ */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 35px;
+}
+
+/* ----------------------------------------------------
+   GLASS CARDS – Enhanced
+------------------------------------------------------ */
+.card {
+  padding: 32px;
+  border-radius: 24px;
+  position: relative;
+
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(18px);
+
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  transition: 0.4s ease;
+
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+/* Entry animation stagger */
+.card:nth-child(1) { animation-delay: .2s; }
+.card:nth-child(2) { animation-delay: .35s; }
+.card:nth-child(3) { animation-delay: .5s; }
+.card:nth-child(4) { animation-delay: .65s; }
+.card:nth-child(5) { animation-delay: .8s; }
+
+/* Hover enhancements */
+.card:hover {
+  transform: translateY(-10px) scale(1.03);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 16px 50px rgba(0,0,0,0.20);
+}
+
+/* Soft neon glow on hover */
+.card:hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(145deg, #ffffff60, #ffffff10);
+  z-index: -1;
+}
+
+/* ----------------------------------------------------
+   CONTENT
+------------------------------------------------------ */
+.icon {
+  font-size: 50px;
+  margin-bottom: 16px;
+  transition: 0.3s;
+}
+
+.card:hover .icon {
+  transform: scale(1.18) rotate(3deg);
+}
+
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.card p {
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 5px 12px;
+  font-size: 11px;
+  border-radius: 12px;
+  background: rgba(52, 211, 153, 0.25);
+  color: #166534;
+  backdrop-filter: blur(8px);
+}
+
+/* Category borders */
+.team { border-left: 6px solid #3b82f6aa; }
+.staff { border-left: 6px solid #22c55eaa; }
+.summary { border-left: 6px solid #f59e0baa; }
+.region { border-left: 6px solid #6366f1aa; }
+
+/* ----------------------------------------------------
+   ANIMATIONS
+------------------------------------------------------ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ----------------------------------------------------
+   FOOTER
+------------------------------------------------------ */
+.footer {
+  margin-top: 50px;
+  text-align: center;
+  color: #475569;
+  font-size: 14px;
+  padding-top: 20px;
+  opacity: 0.8;
+}
 </style>
 </head>
 
 <body>
 
+<!-- Floating particles -->
+<div class="particle" style="left:30%; top:80%;"></div>
+<div class="particle" style="left:60%; top:85%;"></div>
+<div class="particle" style="left:10%; top:75%;"></div>
+<div class="particle" style="left:80%; top:78%;"></div>
+<div class="particle" style="left:50%; top:82%;"></div>
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <h2>📘 Dashboard</h2>
+  <!-- <button onclick="toggleParticles()">✨ Toggle Particles</button> -->
+</div>
+
+<!-- MAIN CONTENT -->
 <div class="container">
+
   <h1>Booking Status Reports</h1>
-  <p class="subtitle">
-    Choose the type of report you want to view
-  </p>
+  <p class="subtitle">Choose the type of report you want to view</p>
 
   <div class="cards">
 
-    <!-- TEAM WISE -->
     <div class="card team" onclick="openTeamReport()">
-      <span class="badge live">LIVE</span>
+      <span class="badge">LIVE</span>
       <div class="icon">👥</div>
       <h2>Team Wise Report</h2>
-      <p>
-        View booking performance across teams with
-        monthly trends, live vs cancel analysis,
-        charts and PDF export.
-      </p>
+      <p>Performance across teams with trends, cancellations, and charts.</p>
     </div>
 
-    <!-- STAFF WISE -->
-    <!-- <div class="card staff" onclick="openStaffReport()"> -->
-      <!-- <span class="badge coming">COMING SOON</span> -->
-	  <div class="card staff" onclick="openStaffReport()">
-	 <span class="badge live">LIVE</span>
+    <div class="card staff" onclick="openStaffReport()">
+      <span class="badge">LIVE</span>
       <div class="icon">🧑‍💼</div>
       <h2>Staff Wise Report</h2>
-      <p>
-        Individual staff performance report with
-        booking count, SQ-FT contribution and status
-        analysis.
-      </p>
+      <p>Individual staff booking metrics and contribution analysis.</p>
     </div>
-	<!-- MONTHLY SUMMARY REPORT -->
-<div class="card summary" onclick="openYearwiseReport()">
-  <span class="badge live">LIVE</span>
-  <div class="icon">📊</div>
-  <h2>Yearly Summary Report</h2>
-  <p>
-    View monthly booking summary, trend comparison,
-    revenue indicators, and monthly performance charts.
-  </p>
-</div>
 
-<!-- REGION WISE REPORT -->
-<div class="card region" onclick="opensourceReport()">
-  <span class="badge live">LIVE</span>
-  <div class="icon">📥</div>
-  <h2>Source Wise Report</h2>
+    <div class="card summary" onclick="openYearwiseReport()">
+      <span class="badge">LIVE</span>
+      <div class="icon">📊</div>
+      <h2>Yearly Summary Report</h2>
+      <p>Monthly booking trends, revenue summary and KPI charts.</p>
+    </div>
 
-  <p>
-    Analyze booking performance across Source wise with
-    heatmaps, distribution comparison, and growth insights.
-  </p>
-</div>
-<!-- REGION WISE REPORT -->
-<div class="card region" onclick="openoverallReport()">
-  <span class="badge live">LIVE</span>
-  <div class="icon">📈</div>
-<h2>Overall Reports</h2>
-  <p>
-    Analyze booking performance across Overall wise reports.
-  </p>
-</div>
+    <div class="card region" onclick="opensourceReport()">
+      <span class="badge">LIVE</span>
+      <div class="icon">📥</div>
+      <h2>Source Wise Report</h2>
+      <p>Performance by source with heatmaps and growth analytics.</p>
+    </div>
+
+    <div class="card region" onclick="openoverallReport()">
+      <span class="badge">LIVE</span>
+      <div class="icon">📈</div>
+      <h2>Overall Reports</h2>
+      <p>Comprehensive overall booking analytics dashboard.</p>
+    </div>
 
   </div>
 </div>
 
-<script>
-function openTeamReport() {
-  window.location.href = "Team-wise-report.html";
-}
+<!-- FOOTER -->
+<div class="footer">
+  © 2025 Booking Analytics Dashboard
+</div>
 
-function openStaffReport() {
-  window.location.href = "staff-index.html";
-}
-function openYearwiseReport() {
-  window.location.href = "year-wise-report.html";
-}
-function opensourceReport() {
-  window.location.href = "Source_Wise_Report.html";
-}
-function openoverallReport() {
-  window.location.href = "overall-report.html";
+<script>
+/* Redirect handlers */
+function openTeamReport() { window.location.href = "Team-wise-report.html"; }
+function openStaffReport() { window.location.href = "staff-index.html"; }
+function openYearwiseReport() { window.location.href = "year-wise-report.html"; }
+function opensourceReport() { window.location.href = "Source_Wise_Report.html"; }
+function openoverallReport() { window.location.href = "overall-report.html"; }
+
+/* Particle toggle */
+let particleVisible = true;
+function toggleParticles() {
+  document.querySelectorAll(".particle").forEach(el => {
+    el.style.display = particleVisible ? "none" : "block";
+  });
+  particleVisible = !particleVisible;
 }
 </script>
+
 </body>
 </html>
