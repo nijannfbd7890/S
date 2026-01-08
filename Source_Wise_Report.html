@@ -220,23 +220,39 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
             tr += "</tr>";
             body.innerHTML += tr;
         });
+		
+		// 👉 Calculate Overall Count & Sqft correctly
+let overallCountTotal = 0;
+let overallSqftTotal = 0;
 
-        // GRAND TOTAL ROW
-        let totalHTML = `<tr class="grand-total">
-            <td></td><td>Grand Total</td>
-            <td></td><td></td>`;
+sources.forEach(src => {
+    YEARS.forEach(year => {
+        overallCountTotal += result[src][year].successCount + result[src][year].unsuccessCount;
+        overallSqftTotal += result[src][year].successSqft + result[src][year].unsuccessSqft;
+    });
+});
 
-        YEARS.forEach(year => {
-            const t = totals[year];
-            totalHTML += `
-                <td>${t.successCount}</td>
-                <td>${t.successSqft}</td>
-                <td>${t.unsuccessCount}</td>
-                <td>${t.unsuccessSqft}</td>`;
-        });
+// 👉 Build Grand Total Row
+let totalHTML = `<tr class="grand-total">
+    <td></td>
+    <td>Grand Total</td>
+    <td>${overallCountTotal}</td>
+    <td>${overallSqftTotal}</td>
+`;
 
-        totalHTML += "</tr>";
-        document.getElementById("totalRow").innerHTML = totalHTML;
+YEARS.forEach(year => {
+    const t = totals[year];
+    totalHTML += `
+        <td>${t.successCount}</td>
+        <td>${t.successSqft}</td>
+        <td>${t.unsuccessCount}</td>
+        <td>${t.unsuccessSqft}</td>`;
+});
+
+totalHTML += "</tr>";
+
+document.getElementById("totalRow").innerHTML = totalHTML;
+
 
         /* ---------------------- YEAR CHART (unchanged) ---------------------- */
 
