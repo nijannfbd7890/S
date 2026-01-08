@@ -92,6 +92,36 @@
         <h5>Success vs UnSuccess Count (Pivot Summary)</h5>
         <canvas id="pivotCountChart"></canvas>
     </div>
+	
+	
+	<!-- LOCATION SUMMARY -->
+<div class="card p-4 mb-4 mt-4">
+    <h5>📍 Location-wise KPI Summary</h5>
+    <div id="locationKPI" class="row mt-3"></div>
+</div>
+
+<!-- LOCATION CHARTS -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card p-4 mb-4">
+            <h5>Success Count by Location</h5>
+            <canvas id="locSuccessChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card p-4 mb-4">
+            <h5>UnSuccess Count by Location</h5>
+            <canvas id="locUnsuccessChart"></canvas>
+        </div>
+    </div>
+</div>
+<div class="card p-4 mb-4">
+    <h5>Year-wise Location Comparison</h5>
+    <canvas id="yearLocationChart"></canvas>
+</div>
+
+
 
 </div>
 
@@ -170,98 +200,268 @@ Papa.parse("https://nijannfbd7890.github.io/S/Overall.csv", {
                 ]
             }
         });
+		
+/* -----------------------------------------------------------
+   BUILD Success / UnSuccess / Overall Summary (Pivot Summary)
+----------------------------------------------------------- */
+
+let pivot = {};
+
+rows.forEach(row => {
+    const year = row["Year"];
+    const sqFt = parseFloat(row["Actual TOTAL SQ-FT"]) || 0;
+
+    // FIXED ✓ Using your real column name
+    const status = (row["DAILY UPDATION"] || "").trim().toUpperCase();
+
+    if (!year) return;
+
+    if (!pivot[year]) {
+        pivot[year] = {
+            successCount: 0,
+            unsuccessCount: 0,
+            overallCount: 0,
+            successSqft: 0,
+            unsuccessSqft: 0
+        };
+    }
+
+    pivot[year].overallCount++;
+
+    if (status === "SUCCESS") {
+        pivot[year].successCount++;
+        pivot[year].successSqft += sqFt;
+    }
+
+    if (status === "UNSUCCESS") {
+        pivot[year].unsuccessCount++;
+        pivot[year].unsuccessSqft += sqFt;
+    }
+});
+
+// Extract Chart Data
+const pivotYears = Object.keys(pivot);
+const successCounts = pivotYears.map(y => pivot[y].successCount);
+const unsuccessCounts = pivotYears.map(y => pivot[y].unsuccessCount);
+const overallCounts = pivotYears.map(y => pivot[y].overallCount);
+const successSqftArr = pivotYears.map(y => pivot[y].successSqft);
+const unsuccessSqftArr = pivotYears.map(y => pivot[y].unsuccessSqft);
+
+// Update KPI Boxes
+document.getElementById("successCount").innerText = successCounts.reduce((a,b)=>a+b,0);
+document.getElementById("unsuccessCount").innerText = unsuccessCounts.reduce((a,b)=>a+b,0);
+document.getElementById("overallCount").innerText = overallCounts.reduce((a,b)=>a+b,0);
+
+document.getElementById("successSqft").innerText = successSqftArr.reduce((a,b)=>a+b,0);
+document.getElementById("unsuccessSqft").innerText = unsuccessSqftArr.reduce((a,b)=>a+b,0);
+document.getElementById("overallSqft").innerText = successSqftArr.reduce((a,b)=>a+b,0)
+                                               + unsuccessSqftArr.reduce((a,b)=>a+b,0);
+											   
+/* -----------------------------------------------------------
+   NEW LOCATION KPI SUMMARY (NO TABLE, NO CHARTS)
+----------------------------------------------------------- */
+
+let locKPI = {};
+
+rows.forEach(row => {
+    const location = (row["LOCATION"] || "").trim().toUpperCase();
+    const sqFt = parseFloat(row["Actual TOTAL SQ-FT"]) || 0;
+    const status = (row["DAILY UPDATION"] || "").trim().toUpperCase();
+
+    if (!location) return;
+
+    if (!locKPI[location]) {
+        locKPI[location] = {
+            totalCount: 0,
+            totalSqft: 0,
+            successCount: 0,
+            successSqft: 0,
+            unsuccessCount: 0,
+            unsuccessSqft: 0
+        };
+    }
+
+    locKPI[location].totalCount++;
+    locKPI[location].totalSqft += sqFt;
+
+    if (status === "SUCCESS") {
+        locKPI[location].successCount++;
+        locKPI[location].successSqft += sqFt;
+    }
+
+    if (status === "UNSUCCESS") {
+        locKPI[location].unsuccessCount++;
+        locKPI[location].unsuccessSqft += sqFt;
+    }
+});
+
+/* RENDER LOCATION KPI CARDS */
+let locHTML = "";
+
+Object.keys(locKPI).forEach(loc => {
+    const d = locKPI[loc];
+
+    locHTML += `
+    <div class="col-md-3 mb-3">
+        <div class="kpi-box">
+            <h6>${loc}</h6>
+
+            <div><b>Total Count:</b> ${d.totalCount}</div>
+            <div><b>Total SQFT:</b> ${d.totalSqft.toLocaleString()}</div>
+
+            <hr>
+
+            <div><b>Success:</b> ${d.successCount}</div>
+            <div><b>Success SQFT:</b> ${d.successSqft.toLocaleString()}</div>
+
+            <hr>
+
+            <div><b>UnSuccess:</b> ${d.unsuccessCount}</div>
+            <div><b>UnSuccess SQFT:</b> ${d.unsuccessSqft.toLocaleString()}</div>
+        </div>
+    </div>
+    `;
+});
+
+document.getElementById("locationKPI").innerHTML = locHTML;
+/* -----------------------------------------------------------
+   NEW LOCATION CHARTS (SUCCESS & UNSUCCESS)
+----------------------------------------------------------- */
+
+let locNames = Object.keys(locKPI);
+
+// SUCCESS COUNTS BY LOCATION
+let successCountsByLoc = locNames.map(loc => locKPI[loc].successCount);
+
+// UNSUCCESS COUNTS BY LOCATION
+let unSuccessCountsByLoc = locNames.map(loc => locKPI[loc].unsuccessCount);
+
+
+// ⭐ SUCCESS COUNT CHART
+new Chart(document.getElementById("locSuccessChart"), {
+    type: "bar",
+    data: {
+        labels: locNames,
+        datasets: [{
+            label: "Success Count",
+            data: successCountsByLoc,
+            backgroundColor: "#4A90E2"
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
     }
 });
 
 
 /* -----------------------------------------------------------
-   LOAD Pivot.csv (Success / UnSuccess / Overall)
+   YEAR-WISE LOCATION COMPARISON CHART
 ----------------------------------------------------------- */
-Papa.parse("https://nijannfbd7890.github.io/S/Pivot.csv", {
-    download: true,
-    header: true,
-    dynamicTyping: true,
-    complete: function(results) {
 
-        const rows = results.data;
+let years_list = [...new Set(rows.map(r => r["Year"]))].sort();
 
-        let years = [];
-        let successCounts = [];
-        let unsuccessCounts = [];
-        let overallCounts = [];
+let yearLocSuccess = {};
+let yearLocUnSuccess = {};
 
-        let totalSuccess = 0,
-            totalUnsuccess = 0,
-            totalSuccessSqft = 0,
-            totalUnsuccessSqft = 0;
+years_list.forEach(year => {
+    yearLocSuccess[year] = { NELLIKUPPAM: 0, GST: 0, OMR: 0, ECR: 0 };
+    yearLocUnSuccess[year] = { NELLIKUPPAM: 0, GST: 0, OMR: 0, ECR: 0 };
+});
 
-        rows.forEach(row => {
+rows.forEach(row => {
+    const y = row["Year"];
+    const loc = (row["LOCATION"] || "").trim().toUpperCase();
+    const status = (row["DAILY UPDATION"] || "").trim().toUpperCase();
 
-            if (!row.Year) return;
+    if (!yearLocSuccess[y]) return;
+    if (!["NELLIKUPPAM","GST","OMR","ECR"].includes(loc)) return;
 
-            let y = row.Year;
+    if (status === "SUCCESS") yearLocSuccess[y][loc]++;
+    if (status === "UNSUCCESS") yearLocUnSuccess[y][loc]++;
+});
 
-            years.push(y);
+/* Create Dataset for Chart */
+let datasets = [];
 
-            let sCount = parseInt(row.Success_Count) || 0;
-            let sSqft = parseFloat(row.Success_SQFT) || 0;
+// BUILD DATASETS FOR 8 SERIES
+["NELLIKUPPAM", "GST", "OMR", "ECR"].forEach(loc => {
+    datasets.push({
+        label: `${loc} Success`,
+        data: years_list.map(y => yearLocSuccess[y][loc]),
+        borderWidth: 2,
+        borderColor: "#4A90E2",
+        backgroundColor: "rgba(74,144,226,0.3)",
+        tension: 0.3
+    });
 
-            let uCount = parseInt(row.UnSuccess_Count) || 0;
-            let uSqft = parseFloat(row.UnSuccess_SQFT) || 0;
+    datasets.push({
+        label: `${loc} UnSuccess`,
+        data: years_list.map(y => yearLocUnSuccess[y][loc]),
+        borderWidth: 2,
+        borderColor: "#FF6384",
+        backgroundColor: "rgba(255,99,132,0.3)",
+        tension: 0.3
+    });
+});
 
-            let oCount = parseInt(row.Total_Count) || (sCount + uCount);
+/* Render Chart */
+new Chart(document.getElementById("yearLocationChart"), {
+    type: "line",
+    data: {
+        labels: years_list,
+        datasets: datasets
+    },
+    options: {
+        responsive: true,
+        stacked: false,
+        plugins: {
+            legend: { position: "bottom" }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
 
-            successCounts.push(sCount);
-            unsuccessCounts.push(uCount);
-            overallCounts.push(oCount);
 
-            totalSuccess += sCount;
-            totalUnsuccess += uCount;
+// ⭐ UNSUCCESS COUNT CHART
+new Chart(document.getElementById("locUnsuccessChart"), {
+    type: "bar",
+    data: {
+        labels: locNames,
+        datasets: [{
+            label: "UnSuccess Count",
+            data: unSuccessCountsByLoc,
+            backgroundColor: "#FF6384"
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
 
-            totalSuccessSqft += sSqft;
-            totalUnsuccessSqft += uSqft;
-        });
+											   
+											   
 
-        // UPDATE KPI VALUES
-        document.getElementById("overallCount").innerText = totalSuccess + totalUnsuccess;
-        document.getElementById("overallSqft").innerText = (totalSuccessSqft + totalUnsuccessSqft).toLocaleString();
 
-        document.getElementById("successCount").innerText = totalSuccess;
-        document.getElementById("successSqft").innerText = totalSuccessSqft.toLocaleString();
-
-        document.getElementById("unsuccessCount").innerText = totalUnsuccess;
-        document.getElementById("unsuccessSqft").innerText = totalUnsuccessSqft.toLocaleString();
-
-        // CHART CREATION
-        new Chart(document.getElementById("pivotCountChart"), {
-            type: "bar",
-            data: {
-                labels: years,
-                datasets: [
-                    {
-                        label: "Success Count",
-                        data: successCounts,
-                        backgroundColor: "#4cb3ff"
-                    },
-                    {
-                        label: "UnSuccess Count",
-                        data: unsuccessCounts,
-                        backgroundColor: "#ff738a"
-                    },
-                    {
-                        label: "Overall Count",
-                        data: overallCounts,
-                        backgroundColor: "#3cb44b"
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
+// Draw Pivot Summary Chart
+new Chart(document.getElementById("pivotCountChart"), {
+    type: "bar",
+    data: {
+        labels: pivotYears,
+        datasets: [
+            { label: "Success Count", data: successCounts, backgroundColor: "#6bb9ff" },
+            { label: "UnSuccess Count", data: unsuccessCounts, backgroundColor: "#ff8fa3" },
+            //{ label: "Overall Count", data: overallCounts, backgroundColor: "#7ed957" }
+        ]
+    }
+});
 
     }
 });
