@@ -41,7 +41,6 @@
     text-align: center; padding: 8px 4px; font-size: 13px;
     color: #334155; border-bottom: 1px solid #eef0f3;
   }
-
   td:nth-child(2) { text-align: left; font-weight: 600; white-space: nowrap; }
   tbody tr:hover { background: #f1f6ff; transition: 0.2s; }
   tbody tr:nth-child(even) { background: #fafbfd; }
@@ -63,6 +62,10 @@
   <tr>
     <th rowspan="3">#</th>
     <th rowspan="3">Source</th>
+
+    <!-- ⭐ Added new columns here ⭐ -->
+    <th rowspan="3">Overall Count</th>
+    <th rowspan="3">Overall SqFt</th>
 
     <th colspan="4">2025</th>
     <th colspan="4">2024</th>
@@ -120,7 +123,6 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
 
         const headers = Object.keys(data[0]);
 
-        // COLUMN FINDERS (IMPORTANT)
         const COL_SOURCE  = headers.find(h => norm(h) === "keyword for source");
         const COL_YEAR    = headers.find(h => norm(h) === "year");
         const COL_SQFT    = headers.find(h => norm(h) === "actual total sq-ft");
@@ -128,7 +130,6 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
 
         const YEARS = ["2025", "2024", "2023", "2022", "2021"];
 
-        // UNIQUE SOURCE LIST
         const sources = [...new Set(data.map(r => r[COL_SOURCE]).filter(Boolean))];
 
         const result = {};
@@ -162,7 +163,7 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
             return "none";
         }
 
-        // BUILD PIVOT DATA
+        // BUILD DATA
         data.forEach(row => {
             const src = row[COL_SOURCE];
             const year = String(row[COL_YEAR]).trim();
@@ -187,14 +188,25 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
             }
         });
 
-        // TABLE BODY
+        // BODY RENDERING
         const body = document.getElementById("pivotBody");
         let i = 1;
 
         sources.forEach(src => {
+
+            let overallCount = 0;
+            let overallSqft = 0;
+
+            YEARS.forEach(year => {
+                overallCount += result[src][year].successCount + result[src][year].unsuccessCount;
+                overallSqft += result[src][year].successSqft + result[src][year].unsuccessSqft;
+            });
+
             let tr = `<tr>
                 <td>${i++}</td>
-                <td>${src}</td>`;
+                <td>${src}</td>
+                <td>${overallCount}</td>
+                <td>${overallSqft}</td>`;
 
             YEARS.forEach(year => {
                 const r = result[src][year];
@@ -211,7 +223,8 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
 
         // GRAND TOTAL ROW
         let totalHTML = `<tr class="grand-total">
-            <td></td><td>Grand Total</td>`;
+            <td></td><td>Grand Total</td>
+            <td></td><td></td>`;
 
         YEARS.forEach(year => {
             const t = totals[year];
@@ -225,76 +238,37 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
         totalHTML += "</tr>";
         document.getElementById("totalRow").innerHTML = totalHTML;
 
-       /* ----------------------
-   YEAR WISE CHART – SAME AS YEAR REPORT
------------------------ */
+        /* ---------------------- YEAR CHART (unchanged) ---------------------- */
 
-const successCountArr = YEARS.map(y => totals[y].successCount);
-const unsuccessCountArr = YEARS.map(y => totals[y].unsuccessCount);
+        const successMerged = YEARS.map(y =>
+            `Success\nCount: ${totals[y].successCount}\nSqFt: ${totals[y].successSqft.toLocaleString()}`
+        );
 
-const successSqftArr = YEARS.map(y => totals[y].successSqft);
-const unsuccessSqftArr = YEARS.map(y => totals[y].unsuccessSqft);
+        const unsuccessMerged = YEARS.map(y =>
+            `Unsuccess\nCount: ${totals[y].unsuccessCount}\nSqFt: ${totals[y].unsuccessSqft.toLocaleString()}`
+        );
 
-// 1️⃣ Merge Count + SqFt (exact same format as Year Wise Report)
-const successMergedLabels = YEARS.map(y =>
-    `Success\nCount: ${totals[y].successCount}\nSqFt: ${totals[y].successSqft.toLocaleString()}`
-);
-
-const unsuccessMergedLabels = YEARS.map(y =>
-    `Unsuccess\nCount: ${totals[y].unsuccessCount}\nSqFt: ${totals[y].unsuccessSqft.toLocaleString()}`
-);
-
-// 2️⃣ Bar heights (SQFT based)
-const successBarHeights = successSqftArr;
-const unsuccessBarHeights = unsuccessSqftArr;
-
-// 3️⃣ Build Chart
-const ctx = document.getElementById("yearChart").getContext("2d");
-
-new Chart(ctx, {
-    type: "bar",
-    data: {
-        labels: YEARS,
-        datasets: [
-            {
-                label: "Success",
-                data: successBarHeights,
-                backgroundColor: "#4CAF50"
+        const ctx = document.getElementById("yearChart").getContext("2d");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: YEARS,
+                datasets: [
+                    { label: "Success", data: YEARS.map(y => totals[y].successSqft), backgroundColor: "#4CAF50" },
+                    { label: "Unsuccess", data: YEARS.map(y => totals[y].unsuccessSqft), backgroundColor: "#FF5252" }
+                ]
             },
-            {
-                label: "Unsuccess",
-                data: unsuccessBarHeights,
-                backgroundColor: "#FF5252"
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { position: "top" },
-            datalabels: {
-                anchor: "end",
-                align: "top",
-                color: "#000",
-                font: { weight: "bold", size: 14 },
-                formatter: function(_, ctx) {
-                    const i = ctx.dataIndex;
-                    return ctx.dataset.label === "Success"
-                        ? successMergedLabels[i]
-                        : unsuccessMergedLabels[i];
+            options: {
+                plugins: {
+                    datalabels: {
+                        anchor: "end", align: "top", color: "#000",
+                        formatter: (v, ctx) =>
+                            ctx.dataset.label === "Success" ? successMerged[ctx.dataIndex] : unsuccessMerged[ctx.dataIndex]
+                    }
                 }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { callback: v => v.toLocaleString() }
-            }
-        }
-    },
-    plugins: [ChartDataLabels]
-});
-
+            },
+            plugins: [ChartDataLabels]
+        });
 
     }
 });

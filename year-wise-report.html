@@ -7,16 +7,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
-
-
-
 <style>
   body {
     font-family: "Segoe UI", system-ui, sans-serif;
     background: #eef3f9;
     padding: 20px 30px;
   }
-
   h2 {
     font-size: 28px;
     font-weight: 800;
@@ -26,7 +22,6 @@
     align-items: center;
     gap: 10px;
   }
-
   .table-container {
     max-width: 100%;
     overflow-x: auto;
@@ -34,44 +29,37 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     background: white;
   }
-
   table {
     width: 100%;
     border-collapse: collapse;
     min-width: 1500px;
   }
-
   thead th {
     position: sticky;
     top: 0;
     z-index: 3;
     text-align: center;
   }
-
   thead tr:first-child th {
     background: #dfe6f2;
     font-size: 15px;
     padding: 10px;
   }
-
   thead tr:nth-child(2) th {
     background: #eef2f9;
     padding: 6px;
     font-size: 14px;
   }
-
   thead tr:nth-child(3) th {
     background: #f7f9fc;
     padding: 6px;
     font-size: 13px;
   }
-
   th {
     font-weight: 700;
     color: #1e293b;
     border-bottom: 1px solid #d6d9e0;
   }
-
   td {
     text-align: center;
     padding: 8px 4px;
@@ -79,23 +67,14 @@
     color: #334155;
     border-bottom: 1px solid #eef0f3;
   }
-
   td:nth-child(2) {
     text-align: left;
     font-weight: 600;
     white-space: nowrap;
   }
+  tbody tr:hover { background: #f1f6ff; transition: 0.2s; }
+  tbody tr:nth-child(even) { background: #fafbfd; }
 
-  tbody tr:hover {
-    background: #f1f6ff;
-    transition: 0.2s;
-  }
-
-  tbody tr:nth-child(even) {
-    background: #fafbfd;
-  }
-
-  /* Grand Total Row Styling */
   .grand-total {
     background: #d7efff !important;
     font-weight: 800;
@@ -117,6 +96,9 @@
   <tr>
     <th rowspan="3">#</th>
     <th rowspan="3">Team Name</th>
+
+    <th rowspan="3">Overall Count</th>
+    <th rowspan="3">Overall SqFt</th>
 
     <th colspan="4">2025</th>
     <th colspan="4">2024</th>
@@ -240,10 +222,25 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
         const body = document.getElementById("pivotBody");
         let i = 1;
 
+        /* -----------------------------------
+           TABLE ROW GENERATION
+        ------------------------------------ */
         teams.forEach(team => {
+
+            let overallCount = 0;
+            let overallSqft = 0;
+
+            YEARS.forEach(year => {
+                overallCount += result[team][year].successCount + result[team][year].unsuccessCount;
+                overallSqft += result[team][year].successSqft + result[team][year].unsuccessSqft;
+            });
+
             let tr = `<tr>
                 <td>${i++}</td>
-                <td>${team}</td>`;
+                <td>${team}</td>
+                <td>${overallCount}</td>
+                <td>${overallSqft}</td>
+            `;
 
             YEARS.forEach(year => {
                 const r = result[team][year];
@@ -256,12 +253,10 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
 
             tr += "</tr>";
             body.innerHTML += tr;
+
         });
 
-        /* ----------------------
-           ADD GRAND TOTAL ROW  
-        ----------------------- */
-
+        /* ---------------------- GRAND TOTAL ROW ---------------------- */
         let totalHTML = `<tr class="grand-total">
             <td></td>
             <td>Grand Total</td>`;
@@ -276,91 +271,73 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
         });
 
         totalHTML += "</tr>";
-
         document.getElementById("totalRow").innerHTML = totalHTML;
-		
-		/* ----------------------
-      YEAR WISE CHARTS
------------------------ */
-
-// Prepare arrays
-const yearsArr = YEARS;
-
-const successCountArr = YEARS.map(y => totals[y].successCount);
-const unsuccessCountArr = YEARS.map(y => totals[y].unsuccessCount);
-
-const successSqftArr = YEARS.map(y => totals[y].successSqft);
-const unsuccessSqftArr = YEARS.map(y => totals[y].unsuccessSqft);
 
 
-// ------------------------------------------------------
-// YEAR WISE SUMMARY CHART (Success & Unsuccess Combined)
-// ------------------------------------------------------
+        /* --------------------------------------------------------------
+           YEAR WISE SUMMARY CHART (SUCCESS + UNSUCCESS)
+        -------------------------------------------------------------- */
 
-// 1️⃣ Merge Count + SqFt into a single label
-const successMergedLabels = YEARS.map(y =>
-    `Success\nCount: ${totals[y].successCount}\nSqFt: ${totals[y].successSqft.toLocaleString()}`
-);
+        const successMergedLabels = YEARS.map(y =>
+            `Success\nCount: ${totals[y].successCount}\nSqFt: ${totals[y].successSqft.toLocaleString()}`
+        );
 
-const unsuccessMergedLabels = YEARS.map(y =>
-    `Unsuccess\nCount: ${totals[y].unsuccessCount}\nSqFt: ${totals[y].unsuccessSqft.toLocaleString()}`
-);
+        const unsuccessMergedLabels = YEARS.map(y =>
+            `Unsuccess\nCount: ${totals[y].unsuccessCount}\nSqFt: ${totals[y].unsuccessSqft.toLocaleString()}`
+        );
 
-// 2️⃣ Bar HEIGHT = SqFt value (you can change to count if needed)
-const successBarHeights = YEARS.map(y => totals[y].successSqft);
-const unsuccessBarHeights = YEARS.map(y => totals[y].unsuccessSqft);
+        const successBarHeights = YEARS.map(y => totals[y].successSqft);
+        const unsuccessBarHeights = YEARS.map(y => totals[y].unsuccessSqft);
 
-// 3️⃣ Build chart
-const ctx = document.getElementById("yearChart").getContext("2d");
+        const ctx = document.getElementById("yearChart").getContext("2d");
 
-new Chart(ctx, {
-    type: "bar",
-    data: {
-        labels: YEARS,
-        datasets: [
-            {
-                label: "Success",
-                data: successBarHeights,
-                backgroundColor: "#4CAF50"
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: YEARS,
+                datasets: [
+                    {
+                        label: "Success",
+                        data: successBarHeights,
+                        backgroundColor: "#4CAF50"
+                    },
+                    {
+                        label: "Unsuccess",
+                        data: unsuccessBarHeights,
+                        backgroundColor: "#FF5252"
+                    }
+                ]
             },
-            {
-                label: "Unsuccess",
-                data: unsuccessBarHeights,
-                backgroundColor: "#FF5252"
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { position: "top" },
-            datalabels: {
-                anchor: "end",
-                align: "top",
-                color: "#000",
-                font: { weight: "bold", size: 14 },
-                formatter: function(value, ctx) {
-                    const i = ctx.dataIndex;
-                    return ctx.dataset.label === "Success"
-                        ? successMergedLabels[i]
-                        : unsuccessMergedLabels[i];
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: "top" },
+                    datalabels: {
+                        anchor: "end",
+                        align: "top",
+                        color: "#000",
+                        font: { weight: "bold", size: 14 },
+                        formatter: function(value, ctx) {
+                            const i = ctx.dataIndex;
+                            return ctx.dataset.label === "Success"
+                                ? successMergedLabels[i]
+                                : unsuccessMergedLabels[i];
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString() }
+                    }
                 }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { callback: v => v.toLocaleString() }
-            }
-        }
-    },
-    plugins: [ChartDataLabels]
-});
-
-
+            },
+            plugins: [ChartDataLabels]
+        });
 
     }
 });
 </script>
+
 </body>
 </html>
