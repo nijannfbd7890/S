@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Strategy Insights Dashboard</title>
+
+<!-- CSS -->
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #eef2f7;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 26px;
+  margin-bottom: 10px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.subtext {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+/* KPI Cards */
+.kpi-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+.kpi {
+  flex: 1;
+  background: white;
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+.kpi h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #475569;
+  margin-bottom: 8px;
+}
+.kpi-value {
+  font-size: 26px;
+  font-weight: bold;
+  color: #0f172a;
+}
+
+/* Card Wrapper */
+.card {
+  background: white;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Canvas small */
+canvas {
+  height: 210px !important;
+}
+
+/* AI Insight Box */
+#aiBox {
+  padding: 10px;
+  background: #f1f5f9;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  color: #334155;
+}
+</style>
+
+<!-- LIBRARIES -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+</head>
+
+<body>
+<a href="Team-wise-report.html" class="back-btn">← Back to Yearly Summary Report</a>
+
+<h1>📊 Strategy Insights Dashboard</h1>
+<p class="subtext">Single-page advanced strategy analytics using the same logic as your Team-wise dashboard.</p>
+
+<!-- KPI ROW 1 -->
+<div class="kpi-row">
+  <div class="kpi">
+    <h3>Total Bookings</h3>
+    <div class="kpi-value" id="kpiTotal">0</div>
+  </div>
+  <div class="kpi">
+    <h3>Live %</h3>
+    <div class="kpi-value" id="kpiLive">0%</div>
+  </div>
+  <div class="kpi">
+    <h3>Cancel %</h3>
+    <div class="kpi-value" id="kpiCancel">0%</div>
+  </div>
+</div>
+
+<!-- KPI ROW 2 (SQFT) -->
+<div class="kpi-row">
+  <div class="kpi">
+    <h3>Total SQ.FT</h3>
+    <div class="kpi-value" id="kpiSqft">0</div>
+  </div>
+  <div class="kpi">
+    <h3>Live SQ.FT</h3>
+    <div class="kpi-value" id="kpiLiveSqft">0</div>
+  </div>
+  <div class="kpi">
+    <h3>Cancel SQ.FT</h3>
+    <div class="kpi-value" id="kpiCancelSqft">0</div>
+  </div>
+</div>
+
+<!-- CHART GRID -->
+<div class="grid">
+  <div class="card">
+    <h3>Top Performing Teams</h3>
+    <canvas id="topTeams"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>High Cancellation Teams</h3>
+    <canvas id="cancelTeams"></canvas>
+  </div>
+</div>
+
+<!-- LINE CHART ROW + INSIGHTS -->
+<div class="grid">
+  <div class="card">
+    <h3>Month-wise Live vs Cancel</h3>
+    <canvas id="monthTrend"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>Insights Summary</h3>
+    <div id="insightBox"></div>
+  </div>
+</div>
+
+<!-- AI Suggestions -->
+<div class="card">
+  <h3>AI Strategy Suggestions</h3>
+  <div id="aiBox">Processing insights…</div>
+</div>
+
+
+<script>
+let fullData = [];
+
+const monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+
+/* Load CSV */
+Papa.parse("https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function (result) {
+    fullData = cleanData(result.data);
+
+    computeKPIs();
+    computeSqft();
+    topTeamsChart();
+    cancelTeamsChart();
+    monthTrendChart();
+    generateInsights();
+    aiInsights();
+  }
+});
+
+console.log("Detected Team Column Samples:");
+for (let i = 0; i < 5; i++) {
+  console.log(getTeam(fullData[i]));
+}
+
+
+/* Cleaning */
+function cleanData(data) {
+  return data.filter(r =>
+    r["TEAM NAME"] || r["Team Name"] || r["BOOKING DATE"]
+  );
+}
+
+/* Get TEAM NAME */
+function getTeam(row) {
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().includes("team")
+  );
+  return key ? String(row[key]).trim() : "";
+}
+
+/* Status */
+function getStatus(row) {
+  let key = Object.keys(row).find(k =>
+    k.toLowerCase().replace(/\s+/g," ").trim() === "rough daily updation"
+  );
+  return key ? String(row[key]).toLowerCase() : "";
+}
+
+/* SQFT */
+function getSqft(row) {
+  return parseInt(row["Actual TOTAL SQ-FT"] || row["Actual Total Sq-ft"] || 0);
+}
+
+/* KPI 1: COUNT BASED */
+function computeKPIs() {
+  let total = fullData.length;
+  let live = 0, cancel = 0;
+
+  fullData.forEach(r => {
+    let st = getStatus(r);
+    if (st.includes("cancel")) cancel++;
+    else live++;
+  });
+
+  document.getElementById("kpiTotal").innerText = total;
+  document.getElementById("kpiLive").innerText = Math.round((live/total)*100) + "%";
+  document.getElementById("kpiCancel").innerText = Math.round((cancel/total)*100) + "%";
+}
+
+/* KPI 2: SQFT BASED */
+function computeSqft() {
+  let total = 0, live = 0, cancel = 0;
+
+  fullData.forEach(r => {
+    let sqft = getSqft(r);
+    let st = getStatus(r);
+
+    total += sqft;
+    if (st.includes("cancel")) cancel += sqft;
+    else live += sqft;
+  });
+
+  document.getElementById("kpiSqft").innerText = total.toLocaleString();
+  document.getElementById("kpiLiveSqft").innerText = live.toLocaleString();
+  document.getElementById("kpiCancelSqft").innerText = cancel.toLocaleString();
+}
+
+/* CHART: TOP TEAMS */
+function topTeamsChart() {
+  const map = {};
+
+  fullData.forEach(r => {
+    let t = getTeam(r);
+    if (!map[t]) map[t] = 0;
+    map[t]++;
+  });
+
+  new Chart(document.getElementById("topTeams"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(map),
+      datasets:[{data:Object.values(map), backgroundColor:"#3b82f6"}]
+    },
+    options:{plugins:{legend:{display:false}}}
+  });
+}
+
+/* CHART: CANCEL TEAMS */
+function cancelTeamsChart() {
+  const map = {};
+
+  fullData.forEach(r => {
+    let t = getTeam(r);
+    let st = getStatus(r);
+    if (!map[t]) map[t] = { total:0, cancel:0 };
+
+    map[t].total++;
+    if (st.includes("cancel")) map[t].cancel++;
+  });
+
+  const teams = Object.keys(map);
+  const perc = teams.map(t => Math.round(map[t].cancel/map[t].total*100));
+
+  new Chart(document.getElementById("cancelTeams"), {
+    type:"bar",
+    data:{labels:teams, datasets:[{data:perc, backgroundColor:"#ef4444"}]},
+    options:{plugins:{legend:{display:false}}}
+  });
+}
+
+/* CHART: MONTH TREND */
+function monthTrendChart() {
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const live=Array(12).fill(0), cancel=Array(12).fill(0);
+
+  fullData.forEach(r => {
+    let raw=r["BOOKING DATE"];
+    if (!raw) return;
+    const [d,m,y]=raw.split("-");
+    const date=new Date(`${y}-${m}-${d}`);
+    const idx=date.getMonth();
+    const st=getStatus(r);
+
+    if (st.includes("cancel")) cancel[idx]++;
+    else live[idx]++;
+  });
+
+  new Chart(document.getElementById("monthTrend"), {
+    type:"line",
+    data:{
+      labels:months,
+      datasets:[
+        {label:"Live", data:live, borderColor:"#22c55e", tension:0.3},
+        {label:"Cancel", data:cancel, borderColor:"#ef4444", tension:0.3}
+      ]
+    }
+  });
+}
+
+/* INSIGHTS: TOP 3, WORST 3, BEST MONTH */
+function generateInsights() {
+  const map = {};
+
+  fullData.forEach(r => {
+    const team = getTeam(r);
+    const st = getStatus(r);
+
+    if (!team) return;
+
+    if (!map[team]) map[team] = { live:0, cancel:0 };
+
+    if (st.includes("cancel")) map[team].cancel++;
+    else map[team].live++;
+  });
+
+  const sorted = Object.keys(map).sort(
+    (a,b) => map[b].live - map[a].live
+  );
+
+  const top3 = sorted.slice(0,3);
+  const worst3 = sorted.slice(-3);
+
+  // Month logic
+  const monthLive = Array(12).fill(0);
+  fullData.forEach(r => {
+    let raw = r["BOOKING DATE"];
+    if (!raw) return;
+    const [d,m,y] = raw.split("-");
+    const dt = new Date(`${y}-${m}-${d}`);
+    monthLive[dt.getMonth()]++;
+  });
+
+  const bestMonth = monthLive.indexOf(Math.max(...monthLive));
+  const worstMonth = monthLive.indexOf(Math.min(...monthLive));
+
+  document.getElementById("insightBox").innerHTML = `
+    <b>Top Performing Teams:</b><br>
+    ${top3.join(", ")}<br><br>
+
+    <b>Teams Needing Improvement:</b><br>
+    ${worst3.join(", ")}<br><br>
+
+    <b>Best Month:</b> ${monthNames[bestMonth]}<br>
+<b>Weakest Month:</b> ${monthNames[worstMonth]}
+
+  `;
+}
+
+
+/* AI SUGGESTIONS */
+function aiInsights() {
+  const map = {};
+  let worstTeam="", worstPct=0;
+
+  fullData.forEach(r=>{
+    let t=getTeam(r);
+    let st=getStatus(r);
+
+    if (!map[t]) map[t]={total:0,cancel:0};
+    map[t].total++;
+    if (st.includes("cancel")) map[t].cancel++;
+  });
+
+  Object.keys(map).forEach(t=>{
+    let pct=(map[t].cancel/map[t].total)*100;
+    if (pct>worstPct){ worstPct=pct; worstTeam=t; }
+  });
+
+  document.getElementById("aiBox").innerHTML = `
+    <b>⚠️ ${worstTeam}</b> has the highest cancellation rate (${Math.round(worstPct)}%).<br><br>
+    Suggested Actions:
+    <ul>
+      <li>Improve customer follow-ups</li>
+      <li>Review lead handling process</li>
+      <li>Strengthen team training</li>
+      <li>Track KPIs weekly</li>
+    </ul>
+  `;
+}
+</script>
+
+</body>
+</html>
+
+</html>

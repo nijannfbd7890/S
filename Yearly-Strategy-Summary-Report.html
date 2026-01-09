@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Yearly Strategy Summary Report</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f7fb; padding: 25px; }
+  h1 { font-size: 32px; margin-bottom: 6px; color: #1e293b; }
+  .subtext { font-size: 15px; color: #475569; margin-bottom: 25px; }
+
+  .back-btn {
+    margin-bottom: 20px; display: inline-block; background: #4f46e5; color: white;
+    padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 600;
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-bottom: 30px;
+  }
+  .kpi {
+    background: white;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  }
+  .kpi h3 { margin: 0; font-size: 17px; color: #334155; }
+  .kpi-value { font-size: 33px; font-weight: 700; margin-top: 10px; color: #0f172a; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-bottom: 25px;
+  }
+  .card {
+    background: white;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  }
+  .card h3 { margin-top: 0; font-size: 20px; margin-bottom: 12px; color: #111; }
+</style>
+</head>
+
+<body>
+<a href="index.html" class="home-btn">🏠 Home Page</a>
+
+<a href="year-wise-report.html" class="back-btn">← Back to Yearly Summary Report</a>
+
+<h1>📊 Yearly Strategy Summary Dashboard</h1>
+<p class="subtext">Deep insights across all years based on Success & Unsuccess performance.</p>
+
+<!-- KPI ROW 1 -->
+<div class="kpi-row">
+  <div class="kpi"><h3>Total Bookings</h3><div class="kpi-value" id="kpiTotal">0</div></div>
+  <div class="kpi"><h3>Success %</h3><div class="kpi-value" id="kpiSuccess">0%</div></div>
+  <div class="kpi"><h3>Unsuccess %</h3><div class="kpi-value" id="kpiUnsuccess">0%</div></div>
+</div>
+
+<!-- KPI ROW 2 -->
+<div class="kpi-row">
+  <div class="kpi"><h3>Total SQ.FT</h3><div class="kpi-value" id="kpiSqft">0</div></div>
+  <div class="kpi"><h3>Success SQ.FT</h3><div class="kpi-value" id="kpiSuccessSqft">0</div></div>
+  <div class="kpi"><h3>Unsuccess SQ.FT</h3><div class="kpi-value" id="kpiUnsuccessSqft">0</div></div>
+</div>
+
+<!-- CHARTS -->
+<div class="grid">
+  <div class="card"><h3>Yearly Success vs Unsuccess</h3><canvas id="yearSuccessChart"></canvas></div>
+  <div class="card"><h3>Yearly SQ.FT Growth Trend</h3><canvas id="yearSqftTrend"></canvas></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Yearly Success % Trend</h3><canvas id="yearSuccessRate"></canvas></div>
+  <div class="card"><h3>Insights Summary</h3><div id="insightBox"></div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Top Performing Teams (Success SQFT)</h3><canvas id="topTeams"></canvas></div>
+  <div class="card"><h3>Teams Needing Improvement (Unsuccess SQFT)</h3><canvas id="weakTeams"></canvas></div>
+</div>
+
+<div class="card">
+  <h3>AI Strategy Suggestions</h3>
+  <div id="aiBox">Loading…</div>
+</div>
+
+<script>
+
+let fullData = [];
+const yearOrder = ["2021","2022","2023","2024","2025"];
+
+/* --- FIXED COLUMN DETECTION (MATCHES year-wise-report.html) --- */
+function normalize(str) { return String(str).toLowerCase().trim(); }
+
+function getColumnName(headers, match) {
+  return headers.find(h => normalize(h) === normalize(match));
+}
+
+function getSqft(row, sqftCol) {
+  return Math.round(Number(row[sqftCol]) || 0);
+}
+
+function getStatus(row, statusCol) {
+  let v = normalize(row[statusCol]);
+  if (v === "success") return "success";
+  if (v === "unsuccess") return "unsuccess";
+  return "none";
+}
+
+/* ---- LOAD CSV ---- */
+Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+
+  complete: (res) => {
+
+    fullData = res.data;
+    const headers = Object.keys(fullData[0]);
+
+    /* FIXED COLUMN MAPPING — SAME AS year-wise-report.html */
+    const COL_TEAM   = getColumnName(headers, "team name");
+    const COL_YEAR   = getColumnName(headers, "year");
+    const COL_SQFT   = getColumnName(headers, "actual total sq-ft");   // ✔ FIXED
+    const COL_STATUS = getColumnName(headers, "daily updation");
+
+    computeKPIs(COL_TEAM, COL_YEAR, COL_SQFT, COL_STATUS);
+    buildYearCharts(COL_YEAR, COL_SQFT, COL_STATUS);
+    buildTeamCharts(COL_TEAM, COL_SQFT, COL_STATUS);
+    buildInsights(COL_YEAR, COL_SQFT, COL_STATUS);
+    buildAI(COL_YEAR, COL_STATUS);
+  }
+});
+
+/* --- KPI CALCULATION --- */
+function computeKPIs(COL_TEAM, COL_YEAR, COL_SQFT, COL_STATUS) {
+
+  let total = fullData.length;
+  let success = 0, unsuccess = 0;
+  let sqft = 0, successSqft = 0, unsuccessSqft = 0;
+
+  fullData.forEach(r => {
+    let sq = getSqft(r, COL_SQFT);
+    let st = getStatus(r, COL_STATUS);
+
+    sqft += sq;
+
+    if (st === "success") { success++; successSqft += sq; }
+    else if (st === "unsuccess") { unsuccess++; unsuccessSqft += sq; }
+  });
+
+  document.getElementById("kpiTotal").innerHTML = total;
+  document.getElementById("kpiSuccess").innerHTML = Math.round((success/total)*100)+"%";
+  document.getElementById("kpiUnsuccess").innerHTML = Math.round((unsuccess/total)*100)+"%";
+
+  document.getElementById("kpiSqft").innerHTML = sqft.toLocaleString();
+  document.getElementById("kpiSuccessSqft").innerHTML = successSqft.toLocaleString();
+  document.getElementById("kpiUnsuccessSqft").innerHTML = unsuccessSqft.toLocaleString();
+}
+
+/* --- YEARLY CHARTS --- */
+function buildYearCharts(COL_YEAR, COL_SQFT, COL_STATUS) {
+
+  let successYear={}, unsuccessYear={}, sqftYear={};
+  yearOrder.forEach(y => { successYear[y]=0; unsuccessYear[y]=0; sqftYear[y]=0; });
+
+  fullData.forEach(r => {
+    let y = r[COL_YEAR];
+    let sq = getSqft(r, COL_SQFT);
+    let st = getStatus(r, COL_STATUS);
+
+    sqftYear[y] += sq;
+
+    if (st === "success") successYear[y]++;
+    else if (st === "unsuccess") unsuccessYear[y]++;
+  });
+
+  new Chart(document.getElementById("yearSuccessChart"), {
+    type:"bar",
+    data:{ labels:yearOrder, datasets:[
+      {label:"Success", data:yearOrder.map(y=>successYear[y]), backgroundColor:"#22c55e"},
+      {label:"Unsuccess", data:yearOrder.map(y=>unsuccessYear[y]), backgroundColor:"#ef4444"}
+    ]}
+  });
+
+  new Chart(document.getElementById("yearSqftTrend"), {
+    type:"line",
+    data:{ labels:yearOrder, datasets:[
+      {label:"SQ.FT", data:yearOrder.map(y=>sqftYear[y]), borderColor:"#4f46e5", tension:0.3}
+    ]}
+  });
+
+  new Chart(document.getElementById("yearSuccessRate"), {
+    type:"line",
+    data:{ labels:yearOrder, datasets:[
+      {label:"Success %",
+       data:yearOrder.map(y=>Math.round((successYear[y]/(successYear[y]+unsuccessYear[y]))*100)),
+       borderColor:"#3b82f6", tension:0.3 }
+    ]}
+  });
+}
+
+/* --- TEAM CHARTS --- */
+function buildTeamCharts(COL_TEAM, COL_SQFT, COL_STATUS) {
+
+  let good={}, bad={};
+
+  fullData.forEach(r => {
+    let t = r[COL_TEAM];
+    let sq = getSqft(r, COL_SQFT);
+    let st = getStatus(r, COL_STATUS);
+
+    if (!good[t]) good[t]=0;
+    if (!bad[t]) bad[t]=0;
+
+    if (st === "success") good[t]+=sq;
+    else if (st === "unsuccess") bad[t]+=sq;
+  });
+
+  let top = Object.entries(good).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  new Chart(document.getElementById("topTeams"), {
+    type:"bar",
+    data:{ labels: top.map(x=>x[0]), datasets:[{
+      data: top.map(x=>x[1]), backgroundColor:"#4f8cff"
+    }]}
+  });
+
+  let weak = Object.entries(bad).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  new Chart(document.getElementById("weakTeams"), {
+    type:"bar",
+    data:{ labels: weak.map(x=>x[0]), datasets:[{
+      data: weak.map(x=>x[1]), backgroundColor:"#ef4444"
+    }]}
+  });
+}
+
+/* --- INSIGHTS SUMMARY --- */
+function buildInsights(COL_YEAR, COL_SQFT, COL_STATUS) {
+
+  let successYear={}, unsuccessYear={};
+  yearOrder.forEach(y=>{ successYear[y]=0; unsuccessYear[y]=0; });
+
+  fullData.forEach(r => {
+    let y = r[COL_YEAR];
+    let sq = getSqft(r, COL_SQFT);
+    let st = getStatus(r, COL_STATUS);
+
+    if (st === "success") successYear[y]+=sq;
+    else if (st === "unsuccess") unsuccessYear[y]+=sq;
+  });
+
+  let best = yearOrder.reduce((a,b)=> successYear[a]>successYear[b] ? a : b);
+  let worst = yearOrder.reduce((a,b)=> unsuccessYear[a]>unsuccessYear[b] ? a : b);
+
+  document.getElementById("insightBox").innerHTML = `
+    <b>Best Year:</b> ${best}<br>
+    <b>Weakest Year:</b> ${worst}<br><br>
+    <b>Success Highlight:</b> ${best} recorded the highest SQ.FT.<br><br>
+    <b>Improvement Focus:</b> ${worst} recorded the most unsuccess SQ.FT.
+  `;
+}
+
+/* --- AI SUGGESTIONS --- */
+function buildAI(COL_YEAR, COL_STATUS) {
+
+  let res={}; yearOrder.forEach(y=>res[y]={s:0,u:0});
+
+  fullData.forEach(r=>{
+    let y = r[COL_YEAR];
+    let st = getStatus(r, COL_STATUS);
+
+    if (st === "success") res[y].s++;
+    else if (st === "unsuccess") res[y].u++;
+  });
+
+  let worstYear="", worstPct=0;
+
+  yearOrder.forEach(y=>{
+    let s=res[y].s, u=res[y].u;
+    let pct = (u/(s+u))*100;
+    if (pct>worstPct){ worstPct=pct; worstYear=y; }
+  });
+
+  document.getElementById("aiBox").innerHTML = `
+    🚨 <b>${worstYear}</b> has the highest unsuccess rate (${Math.round(worstPct)}%).<br><br>
+    <ul>
+      <li>Investigate cancellation reasons during ${worstYear}</li>
+      <li>Improve staff training and follow-up processes</li>
+      <li>Focus on customers lost in ${worstYear}</li>
+      <li>Use high-performing years as benchmarks</li>
+    </ul>
+  `;
+}
+
+</script>
+
+</body>
+</html>

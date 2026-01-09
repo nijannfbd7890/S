@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Staff Strategy Insights Report</title>
+
+<!-- CHART.JS + PAPAPARSE -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<!-- STYLE -->
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f5f7fb;
+    padding: 25px;
+  }
+  h1 { font-size: 32px; margin-bottom: 8px; }
+  p.subtext { font-size: 15px; color: #555; margin-bottom: 20px; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-bottom: 25px;
+  }
+
+  .kpi {
+    background: white;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  }
+
+  .kpi h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: #444;
+  }
+  .kpi-value {
+    font-size: 34px;
+    margin-top: 10px;
+    font-weight: 700;
+    color: #111;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-bottom: 25px;
+  }
+
+  .card {
+    background: white;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  }
+
+  .card h3 {
+    margin: 0 0 12px 0;
+    font-size: 20px;
+  }
+
+</style>
+</head>
+
+<body>
+<a href="staff-index.html" class="back-btn">← Back to Yearly Summary Report</a>
+
+<h1>📊 Staff Strategy Dashboard</h1>
+<p class="subtext">Deep insights based on staff performance, bookings & cancellations.</p>
+
+<!-- KPI ROW 1 -->
+<div class="kpi-row">
+  <div class="kpi">
+    <h3>Total Bookings</h3>
+    <div class="kpi-value" id="kpiTotal">0</div>
+  </div>
+  <div class="kpi">
+    <h3>Live %</h3>
+    <div class="kpi-value" id="kpiLive">0%</div>
+  </div>
+  <div class="kpi">
+    <h3>Cancel %</h3>
+    <div class="kpi-value" id="kpiCancel">0%</div>
+  </div>
+</div>
+
+<!-- KPI ROW 2 -->
+<div class="kpi-row">
+  <div class="kpi">
+    <h3>Total SQ.FT</h3>
+    <div class="kpi-value" id="kpiSqft">0</div>
+  </div>
+  <div class="kpi">
+    <h3>Live SQ.FT</h3>
+    <div class="kpi-value" id="kpiLiveSqft">0</div>
+  </div>
+  <div class="kpi">
+    <h3>Cancel SQ.FT</h3>
+    <div class="kpi-value" id="kpiCancelSqft">0</div>
+  </div>
+</div>
+
+<!-- MAIN CHART ROW -->
+<div class="grid">
+  <div class="card">
+    <h3>Top Performing Staff</h3>
+    <canvas id="topStaffChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>Highest Cancellation Staff</h3>
+    <canvas id="cancelStaffChart"></canvas>
+  </div>
+</div>
+
+<!-- TRENDS + INSIGHTS -->
+<div class="grid">
+  <div class="card">
+    <h3>Month-wise Live vs Cancel</h3>
+    <canvas id="staffMonthTrend"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>Insights Summary</h3>
+    <div id="insightBox"></div>
+  </div>
+</div>
+
+<!-- AI SUGGESTIONS -->
+<div class="card">
+  <h3>AI Strategy Suggestions</h3>
+  <div id="aiBox">Loading…</div>
+</div>
+
+<script>
+let fullData = [];
+
+const monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+/* LOAD CSV */
+Papa.parse("https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(result) {
+    fullData = result.data.filter(r => r["staff name"]);
+    generateKPIs();
+    buildTopStaff();
+    buildCancelStaff();
+    buildMonthTrend();
+    buildInsights();
+    buildAI();
+  }
+});
+
+/* STATUS */
+function getStatus(row) {
+  // Detect column even with tricky spacing or capitalization
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().replace(/\s+/g, " ").trim() === "rough daily updation"
+  );
+
+  return key ? String(row[key]).toLowerCase() : "";
+}
+
+
+/* SQFT */
+function getSqft(row) {
+  return parseInt(row["Actual TOTAL SQ-FT"] || 0);
+}
+
+/* KPI CARDS LOGIC */
+function generateKPIs() {
+  let total = fullData.length;
+  let live = 0;
+  let cancel = 0;
+  let sqft = 0, liveSqft = 0, cancelSqft = 0;
+
+  fullData.forEach(r => {
+    let status = getStatus(r);
+    let sq = getSqft(r);
+    sqft += sq;
+
+    if (status.includes("cancel")) {
+      cancel++;
+      cancelSqft += sq;
+    } else {
+      live++;
+      liveSqft += sq;
+    }
+  });
+
+  document.getElementById("kpiTotal").innerHTML = total;
+  document.getElementById("kpiLive").innerHTML = Math.round((live/total)*100)+"%";
+  document.getElementById("kpiCancel").innerHTML = Math.round((cancel/total)*100)+"%";
+
+  document.getElementById("kpiSqft").innerHTML = sqft.toLocaleString();
+  document.getElementById("kpiLiveSqft").innerHTML = liveSqft.toLocaleString();
+  document.getElementById("kpiCancelSqft").innerHTML = cancelSqft.toLocaleString();
+}
+
+/* TOP STAFF */
+function buildTopStaff() {
+  const map = {};
+  fullData.forEach(r => {
+    const staff = r["staff name"].trim();
+    if (!map[staff]) map[staff] = 0;
+    map[staff]++;
+  });
+
+  new Chart(document.getElementById("topStaffChart"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(map),
+      datasets: [{ data: Object.values(map), backgroundColor: "#4f8cff" }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+}
+
+/* HIGH CANCEL STAFF */
+function buildCancelStaff() {
+  const map = {};
+  fullData.forEach(r => {
+    const staff = r["staff name"];
+    const st = getStatus(r);
+    if (!map[staff]) map[staff] = { total:0, cancel:0 };
+    map[staff].total++;
+    if (st.includes("cancel")) map[staff].cancel++;
+  });
+
+  const labels = Object.keys(map);
+  const values = labels.map(s => Math.round(map[s].cancel / map[s].total * 100));
+
+  new Chart(document.getElementById("cancelStaffChart"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{ data: values, backgroundColor:"#ef4444" }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+}
+
+/* MONTH TREND */
+function buildMonthTrend() {
+  const live = Array(12).fill(0);
+  const cancel = Array(12).fill(0);
+
+  fullData.forEach(r => {
+    let date = r["BOOKING DATE"];
+    if (!date) return;
+
+    const [d,m,y] = date.split("-");
+    const month = new Date(`${y}-${m}-${d}`).getMonth();
+
+    if (getStatus(r).includes("cancel")) cancel[month]++;
+    else live[month]++;
+  });
+
+  new Chart(document.getElementById("staffMonthTrend"), {
+    type: "line",
+    data: {
+      labels: monthNames,
+      datasets: [
+        { label:"Live", data: live, borderColor:"#22c55e", tension:0.3 },
+        { label:"Cancel", data: cancel, borderColor:"#ef4444", tension:0.3 }
+      ]
+    }
+  });
+}
+
+/* INSIGHTS */
+function buildInsights() {
+  const map = {};
+
+  fullData.forEach(r => {
+    const staff = r["staff name"];
+    const st = getStatus(r);
+
+    if (!map[staff]) map[staff] = { live:0, cancel:0 };
+
+    if (st.includes("cancel")) map[staff].cancel++;
+    else map[staff].live++;
+  });
+
+  const sorted = Object.keys(map).sort((a,b) => map[b].live - map[a].live);
+  const top3 = sorted.slice(0,3);
+  const bottom3 = sorted.slice(-3);
+
+  const liveMonths = Array(12).fill(0);
+  fullData.forEach(r => {
+    let raw = r["BOOKING DATE"];
+    if (!raw) return;
+    const [d,m,y] = raw.split("-");
+    liveMonths[new Date(`${y}-${m}-${d}`).getMonth()]++;
+  });
+
+  const bestMonth = liveMonths.indexOf(Math.max(...liveMonths));
+  const worstMonth = liveMonths.indexOf(Math.min(...liveMonths));
+
+  document.getElementById("insightBox").innerHTML = `
+    <b>Top Performing Staff:</b><br>${top3.join(", ")}<br><br>
+    <b>Staff Needing Improvement:</b><br>${bottom3.join(", ")}<br><br>
+    <b>Best Month:</b> ${monthNames[bestMonth]}<br>
+    <b>Weakest Month:</b> ${monthNames[worstMonth]}
+  `;
+}
+
+/* AI SUGGESTIONS */
+function buildAI() {
+  const map = {};
+  let worst = "";
+  let highestCancel = 0;
+
+  fullData.forEach(r => {
+    const staff = r["staff name"];
+    const st = getStatus(r);
+
+    if (!map[staff]) map[staff] = { total:0, cancel:0 };
+    map[staff].total++;
+
+    if (st.includes("cancel")) map[staff].cancel++;
+  });
+
+  Object.keys(map).forEach(staff => {
+    let pct = map[staff].cancel / map[staff].total * 100;
+    if (pct > highestCancel) {
+      highestCancel = pct;
+      worst = staff;
+    }
+  });
+
+  document.getElementById("aiBox").innerHTML = `
+    🚨 <b>${worst}</b> has the highest cancellation rate (${Math.round(highestCancel)}%).<br><br>
+    Suggested Improvements:
+    <ul>
+      <li>Improve lead follow-up frequency</li>
+      <li>Strengthen objection handling</li>
+      <li>Provide mentoring for conversion skills</li>
+      <li>Monitor performance weekly</li>
+    </ul>
+  `;
+}
+</script>
+
+</body>
+</html>

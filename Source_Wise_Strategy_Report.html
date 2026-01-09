@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Source Strategy Summary Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f7fb; padding: 25px; }
+  h1 { font-size: 32px; margin-bottom: 6px; color: #1e293b; }
+  .subtext { font-size: 15px; color: #475569; margin-bottom: 25px; }
+
+  .back-btn {
+    margin-bottom: 20px; display: inline-block; background: #4f46e5; color: white;
+    padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 600;
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-bottom: 30px;
+  }
+  .kpi {
+    background: white;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  }
+  .kpi h3 { margin: 0; font-size: 17px; color: #334155; }
+  .kpi-value { font-size: 33px; font-weight: 700; margin-top: 10px; color: #0f172a; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-bottom: 25px;
+  }
+  .card {
+    background: white;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+  }
+  .card h3 { margin-top: 0; font-size: 20px; margin-bottom: 12px; color: #111; }
+</style>
+</head>
+
+<body>
+
+<a href="Source_Wise_Report.html" class="back-btn">← Back to Source Wise Report</a>
+
+<h1>📊 Source Strategy Summary Dashboard</h1>
+<p class="subtext">Deep insights based on Success, Unsuccess & SQ.FT contribution by Source.</p>
+
+<!-- KPI ROW 1 -->
+<div class="kpi-row">
+  <div class="kpi"><h3>Total Bookings</h3><div class="kpi-value" id="kpiTotal">0</div></div>
+  <div class="kpi"><h3>Success %</h3><div class="kpi-value" id="kpiSuccess">0%</div></div>
+  <div class="kpi"><h3>Unsuccess %</h3><div class="kpi-value" id="kpiUnsuccess">0%</div></div>
+</div>
+
+<!-- KPI ROW 2 -->
+<div class="kpi-row">
+  <div class="kpi"><h3>Total SQ.FT</h3><div class="kpi-value" id="kpiSqft">0</div></div>
+  <div class="kpi"><h3>Success SQ.FT</h3><div class="kpi-value" id="kpiSuccessSqft">0</div></div>
+  <div class="kpi"><h3>Unsuccess SQ.FT</h3><div class="kpi-value" id="kpiUnsuccessSqft">0</div></div>
+</div>
+
+<!-- CHARTS -->
+<div class="grid">
+  <div class="card"><h3>Source-wise Success vs Unsuccess</h3><canvas id="srcSuccessChart"></canvas></div>
+  <div class="card"><h3>Source-wise SQ.FT Contribution</h3><canvas id="srcSqftChart"></canvas></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Yearly Trend by Source</h3><canvas id="srcYearTrend"></canvas></div>
+  <div class="card"><h3>Insights Summary</h3><div id="insightBox"></div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Best Sources (Success SQFT)</h3><canvas id="topSrcChart"></canvas></div>
+  <div class="card"><h3>Weak Sources (Unsuccess SQFT)</h3><canvas id="weakSrcChart"></canvas></div>
+</div>
+
+<div class="card">
+  <h3>AI Strategy Suggestions</h3>
+  <div id="aiBox">Loading…</div>
+</div>
+
+<script>
+
+const yearOrder = ["2021","2022","2023","2024","2025"];
+
+function norm(v){return String(v).toLowerCase().trim();}
+function getNum(v) {
+
+  if (!v) return 0;
+
+  v = String(v)
+        .replace(/,/g, "")      // remove commas
+        .replace(/[^0-9.]/g, "") // remove non-numeric except dot
+        .trim();
+
+  if (v === "" || v === "." || isNaN(v)) return 0;
+
+  return Math.round(Number(v));
+}
+
+
+function getCol(headers, match){
+  return headers.find(h => norm(h) === norm(match));
+}
+
+function getStatus(v){
+  v = norm(v);
+  if (v === "success") return "success";
+  if (v === "unsuccess") return "unsuccess";
+  return "none";
+}
+
+function norm(v){ return String(v).toLowerCase().trim(); }
+
+function getNum(v) {
+  if (!v) return 0;
+
+  v = String(v)
+        .replace(/,/g, "")
+        .replace(/[^0-9.]/g, "")
+        .trim();
+
+  if (v === "" || v === "." || isNaN(v)) return 0;
+
+  return Math.round(Number(v));
+}
+
+
+/* ----------------------------------------------------------
+   LOAD MASTER CSV (same as Year Strategy Dashboard)
+---------------------------------------------------------- */
+
+Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
+  download:true,
+  header:true,
+  skipEmptyLines:true,
+
+  complete: (res) => {
+    const data = res.data;
+    const headers = Object.keys(data[0]);
+
+    // same mapping as working yearly dashboard
+    const COL_SOURCE = getCol(headers, "keyword for source");
+    const COL_STATUS = getCol(headers, "daily updation");
+    const COL_SQFT   = getCol(headers, "actual total sq-ft");
+    const COL_YEAR   = getCol(headers, "year");
+
+    runSourceDashboard(data, COL_SOURCE, COL_STATUS, COL_SQFT, COL_YEAR);
+  }
+});
+
+
+/* ----------------------------------------------------------
+   MAIN FUNCTION: BUILD SOURCE STRATEGY DASHBOARD
+---------------------------------------------------------- */
+
+function runSourceDashboard(fullData, COL_SOURCE, COL_STATUS, COL_SQFT, COL_YEAR){
+
+  /* ---------------- KPI CALC ---------------- */
+
+  let total = fullData.length;
+  let success=0, unsuccess=0;
+  let sqft=0, successSqft=0, unsuccessSqft=0;
+
+  fullData.forEach(r=>{
+    let st = getStatus(r[COL_STATUS]);
+    let sq = getNum(r[COL_SQFT]);
+
+    sqft += sq;
+
+    if (st === "success"){ success++; successSqft += sq; }
+    else if (st === "unsuccess"){ unsuccess++; unsuccessSqft += sq; }
+  });
+
+  document.getElementById("kpiTotal").textContent = total;
+  document.getElementById("kpiSuccess").textContent = Math.round(success/total*100)+"%";
+  document.getElementById("kpiUnsuccess").textContent = Math.round(unsuccess/total*100)+"%";
+  document.getElementById("kpiSqft").textContent = sqft.toLocaleString();
+  document.getElementById("kpiSuccessSqft").textContent = successSqft.toLocaleString();
+  document.getElementById("kpiUnsuccessSqft").textContent = unsuccessSqft.toLocaleString();
+
+
+  /* ---------------- CALCULATE SOURCE LEVEL DATA ---------------- */
+
+  let successCount={}, unsuccessCount={}, sqftSum={};
+
+  fullData.forEach(r=>{
+    let src = r[COL_SOURCE];
+    let st = getStatus(r[COL_STATUS]);
+    let sq = getNum(r[COL_SQFT]);
+
+    if (!successCount[src]) successCount[src] = 0;
+    if (!unsuccessCount[src]) unsuccessCount[src] = 0;
+    if (!sqftSum[src]) sqftSum[src] = 0;
+
+    sqftSum[src] += sq;
+    if (st === "success") successCount[src]++;
+    if (st === "unsuccess") unsuccessCount[src]++;
+  });
+
+
+  /* ---------------- CHART 1: Success vs Unsuccess ---------------- */
+
+  new Chart(document.getElementById("srcSuccessChart"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(successCount),
+      datasets:[
+        { label:"Success", data:Object.values(successCount), backgroundColor:"#22c55e" },
+        { label:"Unsuccess", data:Object.values(unsuccessCount), backgroundColor:"#ef4444" }
+      ]
+    }
+  });
+
+
+  /* ---------------- CHART 2: SQFT Contribution ---------------- */
+
+  new Chart(document.getElementById("srcSqftChart"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(sqftSum),
+      datasets:[
+        { label:"SQ.FT", data:Object.values(sqftSum), backgroundColor:"#4f46e5" }
+      ]
+    }
+  });
+
+
+  /* ---------------- CHART 3: YEAR TREND by SOURCE ---------------- */
+
+  let trend={};
+
+  fullData.forEach(r=>{
+    let src = r[COL_SOURCE];
+    let y = r[COL_YEAR];
+    let sq = getNum(r[COL_SQFT]);
+
+    if (!trend[src]) trend[src] = {};
+    if (!trend[src][y]) trend[src][y] = 0;
+
+    trend[src][y] += sq;
+  });
+
+  let trendDatasets = Object.keys(trend).map(src=>{
+    return {
+      label:src,
+      data:yearOrder.map(y=>trend[src][y] || 0),
+      borderWidth:2,
+      tension:0.3
+    }
+  });
+
+  new Chart(document.getElementById("srcYearTrend"), {
+    type:"line",
+    data:{ labels:yearOrder, datasets:trendDatasets }
+  });
+
+
+  /* ---------------- TOP & WEAK SOURCES ---------------- */
+
+  let best = Object.entries(sqftSum).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  let worst = Object.entries(unsuccessCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  new Chart(document.getElementById("topSrcChart"), {
+    type:"bar",
+    data:{
+      labels:best.map(x=>x[0]),
+      datasets:[{ data:best.map(x=>x[1]), backgroundColor:"#3b82f6" }]
+    }
+  });
+
+  new Chart(document.getElementById("weakSrcChart"), {
+    type:"bar",
+    data:{
+      labels:worst.map(x=>x[0]),
+      datasets:[{ data:worst.map(x=>x[1]), backgroundColor:"#dc2626" }]
+    }
+  });
+
+
+  /* ---------------- INSIGHT BOX ---------------- */
+
+  let bestSource = best[0][0];
+  let worstSource = worst[0][0];
+
+  document.getElementById("insightBox").innerHTML = `
+    <b>Top Performer:</b> ${bestSource}<br>
+    <b>Weakest Source:</b> ${worstSource}<br><br>
+    <b>Insight:</b> ${bestSource} generates highest total SQ.FT and strong success count.<br><br>
+    <b>Warning:</b> ${worstSource} has high unsuccess volume — requires immediate attention.
+  `;
+
+
+  /* ---------------- AI RECOMMENDATION ENGINE ---------------- */
+
+  let aiScore={};
+
+  Object.keys(successCount).forEach(src=>{
+    let s = successCount[src];
+    let u = unsuccessCount[src];
+    let sq = sqftSum[src];
+
+    aiScore[src] =
+          (s * 0.4)
+        + (sq * 0.5)
+        - (u * 0.25);
+  });
+
+  let bestAI = Object.entries(aiScore).sort((a,b)=>b[1]-a[1])[0][0];
+  let worstAI = Object.entries(aiScore).sort((a,b)=>a[1]-b[1])[0][0];
+
+  document.getElementById("aiBox").innerHTML = `
+    🚀 <b>${bestAI}</b> is the strongest opportunity for budget expansion.<br><br>
+    ⚠️ <b>${worstAI}</b> needs review and optimization.<br><br>
+    <ul>
+      <li>Improve lead follow-up</li>
+      <li>Audit source quality</li>
+      <li>Optimize ad targeting for weak segments</li>
+      <li>Allocate more budget into ${bestAI}</li>
+    </ul>
+  `;
+}
+
+</script>
+
+</body>
+</html>
