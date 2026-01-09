@@ -410,7 +410,7 @@
       <option value="All Teams">All Teams</option>
       <option value="Ashok Sir">Ashok Sir</option>
       <option value="Gopi Sir">Gopi Sir</option>
-      <!-- <option value="Gopi Sir">Gistak</option> -->
+      <option value="Gistak">Gistak</option>
       <option value="Kumaresan Sir">Kumaresan Sir</option>
       <option value="Latha Mam & Ayyappan Sir">Latha Mam & Ayyappan Sir</option>
       <option value="Prabhakaran Sir">Prabhakaran Sir</option>
@@ -520,7 +520,10 @@ let fullCSVData = [];
 let teamStatusChart = null;
 
 // Teams to hide temporarily
-const HIDDEN_TEAMS = ["gistak"];
+<!-- const HIDDEN_TEAMS = ["gistak"]; -->
+
+// const HIDDEN_TEAMS = ["gistak"];   // Gistak is now included
+const HIDDEN_TEAMS = [];             // Show all teams
 
 
 Papa.parse(
