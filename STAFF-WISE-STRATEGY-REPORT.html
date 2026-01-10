@@ -109,11 +109,19 @@
 <div class="grid">
   <div class="card">
     <h3>Top Performing Staff</h3>
+	<p id="staffTopInfo" style="margin:5px 0; font-size:14px; font-weight:600; color:#1e293b;">
+  Loading live statistics…
+</p>
+
     <canvas id="topStaffChart"></canvas>
   </div>
 
   <div class="card">
     <h3>Highest Cancellation Staff</h3>
+	<p id="staffCancelInfo" style="margin:5px 0; font-size:14px; font-weight:600; color:#b91c1c;">
+  Loading cancellation statistics…
+</p>
+
     <canvas id="cancelStaffChart"></canvas>
   </div>
 </div>
@@ -140,6 +148,11 @@
 <script>
 let fullData = [];
 
+window.staffLiveCount = 0;
+window.staffLiveSqft = 0;
+window.staffCancelCount = 0;
+window.staffCancelSqft = 0;
+
 const monthNames = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December"
@@ -151,7 +164,11 @@ Papa.parse("https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv", {
   header: true,
   skipEmptyLines: true,
   complete: function(result) {
-    fullData = result.data.filter(r => r["staff name"]);
+    fullData = result.data.filter(r => {
+  const key = Object.keys(r).find(k => k.toLowerCase().includes("staff"));
+  return r[key] && r[key].trim() !== "";
+});
+
     generateKPIs();
     buildTopStaff();
     buildCancelStaff();
@@ -207,6 +224,14 @@ function generateKPIs() {
   document.getElementById("kpiCancelSqft").innerHTML = cancelSqft.toLocaleString();
 }
 
+function getStaffName(row) {
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().includes("staff")
+  );
+  return key ? String(row[key]).trim() : "";
+}
+
+
 /* TOP STAFF */
 function buildTopStaff() {
   const map = {};
@@ -230,7 +255,7 @@ function buildTopStaff() {
 function buildCancelStaff() {
   const map = {};
   fullData.forEach(r => {
-    const staff = r["staff name"];
+    const staff = getStaffName(r);
     const st = getStatus(r);
     if (!map[staff]) map[staff] = { total:0, cancel:0 };
     map[staff].total++;
@@ -282,8 +307,9 @@ function buildMonthTrend() {
 function buildInsights() {
   const map = {};
 
+  /* STAFF-WISE LIVE & CANCEL */
   fullData.forEach(r => {
-    const staff = r["staff name"];
+    const staff = getStaffName(r);
     const st = getStatus(r);
 
     if (!map[staff]) map[staff] = { live:0, cancel:0 };
@@ -296,24 +322,56 @@ function buildInsights() {
   const top3 = sorted.slice(0,3);
   const bottom3 = sorted.slice(-3);
 
-  const liveMonths = Array(12).fill(0);
+  /* MONTH-WISE METRICS */
+  const monthLive = Array(12).fill(0);
+  const monthSqft = Array(12).fill(0);
+  const monthCancel = Array(12).fill(0);
+  const monthCancelSqft = Array(12).fill(0);
+
   fullData.forEach(r => {
     let raw = r["BOOKING DATE"];
     if (!raw) return;
+
     const [d,m,y] = raw.split("-");
-    liveMonths[new Date(`${y}-${m}-${d}`).getMonth()]++;
+    const dt = new Date(`${y}-${m}-${d}`);
+    const idx = dt.getMonth();
+
+    const st = getStatus(r);
+    const sqft = getSqft(r);
+
+    if (!st.includes("cancel")) {
+      monthLive[idx]++;
+      monthSqft[idx] += sqft;
+    } else {
+      monthCancel[idx]++;
+      monthCancelSqft[idx] += sqft;
+    }
   });
 
-  const bestMonth = liveMonths.indexOf(Math.max(...liveMonths));
-  const worstMonth = liveMonths.indexOf(Math.min(...liveMonths));
+  /* BEST & WORST MONTH */
+  const bestMonth = monthLive.indexOf(Math.max(...monthLive));
+  const worstMonth = monthLive.indexOf(Math.min(...monthLive));
 
+  /* UPDATE INSIGHT BOX */
   document.getElementById("insightBox").innerHTML = `
     <b>Top Performing Staff:</b><br>${top3.join(", ")}<br><br>
+
     <b>Staff Needing Improvement:</b><br>${bottom3.join(", ")}<br><br>
+
     <b>Best Month:</b> ${monthNames[bestMonth]}<br>
-    <b>Weakest Month:</b> ${monthNames[worstMonth]}
+    (Live: <b>${monthLive[bestMonth]}</b> |
+     SQ.FT: <b>${monthSqft[bestMonth].toLocaleString()}</b> |
+     Cancel: <b>${monthCancel[bestMonth]}</b> |
+     Cancel SQ.FT: <b>${monthCancelSqft[bestMonth].toLocaleString()}</b>)<br><br>
+
+    <b>Weakest Month:</b> ${monthNames[worstMonth]}<br>
+    (Live: <b>${monthLive[worstMonth]}</b> |
+     SQ.FT: <b>${monthSqft[worstMonth].toLocaleString()}</b> |
+     Cancel: <b>${monthCancel[worstMonth]}</b> |
+     Cancel SQ.FT: <b>${monthCancelSqft[worstMonth].toLocaleString()}</b>)
   `;
 }
+
 
 /* AI SUGGESTIONS */
 function buildAI() {
@@ -322,7 +380,7 @@ function buildAI() {
   let highestCancel = 0;
 
   fullData.forEach(r => {
-    const staff = r["staff name"];
+    const staff = getStaffName(r);
     const st = getStatus(r);
 
     if (!map[staff]) map[staff] = { total:0, cancel:0 };
