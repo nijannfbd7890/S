@@ -95,6 +95,7 @@ canvas {
 <p class="subtext">Single-page advanced strategy analytics using the same logic as your Team-wise dashboard.</p>
 
 <!-- KPI ROW 1 -->
+
 <div class="kpi-row">
   <div class="kpi">
     <h3>Total Bookings</h3>
@@ -128,15 +129,29 @@ canvas {
 
 <!-- CHART GRID -->
 <div class="grid">
-  <div class="card">
-    <h3>Top Performing Teams</h3>
-    <canvas id="topTeams"></canvas>
-  </div>
+ <div class="card">
+  <h3>Top Performing Teams</h3>
+
+  <!-- NEW INFO LINE -->
+  <p id="topInfo" style="margin:5px 0; font-size:14px; color:#475569; font-weight:600;">
+    Loading live statistics…
+  </p>
+
+  <canvas id="topTeams"></canvas>
+</div>
+
 
   <div class="card">
-    <h3>High Cancellation Teams</h3>
-    <canvas id="cancelTeams"></canvas>
-  </div>
+  <h3>High Cancellation Teams</h3>
+
+  <!-- NEW INFO LINE -->
+  <p id="cancelInfo" style="margin:5px 0; font-size:14px; color:#dc2626; font-weight:600;">
+    Loading cancellation statistics…
+  </p>
+
+  <canvas id="cancelTeams"></canvas>
+</div>
+
 </div>
 
 <!-- LINE CHART ROW + INSIGHTS -->
@@ -178,8 +193,11 @@ Papa.parse("https://nijannfbd7890.github.io/S/Yearly_Booking_Report.csv", {
 
     computeKPIs();
     computeSqft();
+	window.teamSqftMap = getTeamSqftMap();
     topTeamsChart();
-    cancelTeamsChart();
+    window.cancelSqftMap = getCancelSqftMap();   // ← ADD
+	cancelTeamsChart();
+
     monthTrendChart();
     generateInsights();
     aiInsights();
@@ -204,8 +222,19 @@ function getTeam(row) {
   const key = Object.keys(row).find(k =>
     k.toLowerCase().includes("team")
   );
-  return key ? String(row[key]).trim() : "";
+  if (!key) return "";
+
+  let name = String(row[key]).trim();
+
+  // NORMALIZATION FIX
+  name = name.replace(/\s+/g, " ");  // Fix double spaces
+  name = name.toLowerCase();         // Case insensitive
+  name = name.replace(/sir$/gi, "Sir"); 
+  name = name.replace(/\b\w/g, c => c.toUpperCase()); // Proper case
+
+  return name;
 }
+
 
 /* Status */
 function getStatus(row) {
@@ -229,11 +258,18 @@ function computeKPIs() {
     let st = getStatus(r);
     if (st.includes("cancel")) cancel++;
     else live++;
+	window.overallCancelCount = cancel;
+updateCancelInfo();
+
   });
 
   document.getElementById("kpiTotal").innerText = total;
   document.getElementById("kpiLive").innerText = Math.round((live/total)*100) + "%";
   document.getElementById("kpiCancel").innerText = Math.round((cancel/total)*100) + "%";
+  
+  window.overallLiveCount = live;
+updateTopInfo();
+
 }
 
 /* KPI 2: SQFT BASED */
@@ -247,22 +283,75 @@ function computeSqft() {
     total += sqft;
     if (st.includes("cancel")) cancel += sqft;
     else live += sqft;
+	window.overallCancelSqft = cancel;
+updateCancelInfo();
+
   });
 
   document.getElementById("kpiSqft").innerText = total.toLocaleString();
   document.getElementById("kpiLiveSqft").innerText = live.toLocaleString();
   document.getElementById("kpiCancelSqft").innerText = cancel.toLocaleString();
+  window.overallLiveSqft = live;
+updateTopInfo();
+
 }
+
+window.overallCancelCount = 0;
+window.overallCancelSqft = 0;
+
+function updateTopInfo() {
+  const count = window.overallLiveCount || 0;
+  const sqft  = window.overallLiveSqft || 0;
+
+  document.getElementById("topInfo").innerHTML =
+    `Overall Live Count: <b>${count}</b> &nbsp; | &nbsp;
+     Overall Live SQ.FT: <b>${sqft.toLocaleString()}</b>`;
+}
+
+function updateCancelInfo() {
+  const count = window.overallCancelCount || 0;
+  const sqft  = window.overallCancelSqft || 0;
+
+  document.getElementById("cancelInfo").innerHTML =
+    `Overall Cancel Count: <b>${count}</b> &nbsp; | &nbsp;
+     Overall Cancel SQ.FT: <b>${sqft.toLocaleString()}</b>`;
+}
+
+function getTeamSqftMap() {
+  const sqftMap = {};
+
+  fullData.forEach(r => {
+    let team = getTeam(r);
+    let sqft = getSqft(r);
+    let st = getStatus(r);
+
+    if (!st.includes("cancel")) {
+      if (!sqftMap[team]) sqftMap[team] = 0;
+      sqftMap[team] += sqft;
+    }
+  });
+
+  return sqftMap;
+}
+
+
 
 /* CHART: TOP TEAMS */
 function topTeamsChart() {
   const map = {};
 
   fullData.forEach(r => {
-    let t = getTeam(r);
-    if (!map[t]) map[t] = 0;
-    map[t]++;
-  });
+  let t = getTeam(r);
+  let st = getStatus(r);
+
+  if (!map[t]) map[t] = 0;   // include team ALWAYS
+
+if (!st.includes("cancel")) {
+    map[t]++;              // count only live
+}
+
+});
+
 
   new Chart(document.getElementById("topTeams"), {
     type:"bar",
@@ -270,30 +359,101 @@ function topTeamsChart() {
       labels:Object.keys(map),
       datasets:[{data:Object.values(map), backgroundColor:"#3b82f6"}]
     },
-    options:{plugins:{legend:{display:false}}}
+    options: {
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          const team = context.label;
+          const count = context.raw;
+
+          // Get sqft per team
+          const sqftMap = window.teamSqftMap || {};
+          const sqft = sqftMap[team] || 0;
+
+          return [
+            `Count: ${count}`,
+            `SQ.FT: ${sqft.toLocaleString()}`
+          ];
+        }
+      }
+    }
+  }
+}
+
   });
 }
+
+function getCancelSqftMap() {
+  const cancelSqftMap = {};
+
+  fullData.forEach(r => {
+    let team = getTeam(r);
+    let sqft = getSqft(r);
+    let st = getStatus(r);
+
+    if (!cancelSqftMap[team]) cancelSqftMap[team] = 0;
+
+    if (st.includes("cancel")) {
+      cancelSqftMap[team] += sqft;
+    }
+  });
+
+  return cancelSqftMap;
+}
+
+
 
 /* CHART: CANCEL TEAMS */
 function cancelTeamsChart() {
   const map = {};
 
-  fullData.forEach(r => {
-    let t = getTeam(r);
-    let st = getStatus(r);
-    if (!map[t]) map[t] = { total:0, cancel:0 };
+fullData.forEach(r => {
+  let t = getTeam(r);
+  let st = getStatus(r);
+  if (!map[t]) map[t] = { total:0, cancel:0 };
 
-    map[t].total++;
-    if (st.includes("cancel")) map[t].cancel++;
-  });
+  map[t].total++;
+  if (st.includes("cancel")) map[t].cancel++;
+});
 
-  const teams = Object.keys(map);
-  const perc = teams.map(t => Math.round(map[t].cancel/map[t].total*100));
+window.cancelTeamsData = map;
+
+const teams = Object.keys(map);
+const perc = teams.map(t => Math.round(map[t].cancel/map[t].total*100));
+
 
   new Chart(document.getElementById("cancelTeams"), {
     type:"bar",
     data:{labels:teams, datasets:[{data:perc, backgroundColor:"#ef4444"}]},
-    options:{plugins:{legend:{display:false}}}
+    options: {
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          const team = context.label;
+          const cancelPct = context.raw;
+
+          // Get team-specific cancel totals
+          const map = window.cancelTeamsData || {};
+          const cancelCount = map[team]?.cancel || 0;
+
+          const sqftMap = window.cancelSqftMap || {};
+          const sqft = sqftMap[team] || 0;
+
+          return [
+            `Cancel %: ${cancelPct}%`,
+            `Cancel Count: ${cancelCount}`,
+            `Cancel SQ.FT: ${sqft.toLocaleString()}`
+          ];
+        }
+      }
+    }
+  }
+}
+
   });
 }
 
@@ -327,13 +487,15 @@ function monthTrendChart() {
 }
 
 /* INSIGHTS: TOP 3, WORST 3, BEST MONTH */
+/* INSIGHTS: TOP 3, WORST 3, BEST MONTH (FULL METRICS) */
 function generateInsights() {
+
+  /* TEAM-WISE LIVE & CANCEL */
   const map = {};
 
   fullData.forEach(r => {
     const team = getTeam(r);
     const st = getStatus(r);
-
     if (!team) return;
 
     if (!map[team]) map[team] = { live:0, cancel:0 };
@@ -342,26 +504,41 @@ function generateInsights() {
     else map[team].live++;
   });
 
-  const sorted = Object.keys(map).sort(
-    (a,b) => map[b].live - map[a].live
-  );
-
+  const sorted = Object.keys(map).sort((a,b) => map[b].live - map[a].live);
   const top3 = sorted.slice(0,3);
   const worst3 = sorted.slice(-3);
 
-  // Month logic
+  /* MONTH-WISE METRICS */
   const monthLive = Array(12).fill(0);
+  const monthSqft = Array(12).fill(0);
+  const monthCancel = Array(12).fill(0);
+  const monthCancelSqft = Array(12).fill(0);
+
   fullData.forEach(r => {
     let raw = r["BOOKING DATE"];
     if (!raw) return;
+
     const [d,m,y] = raw.split("-");
     const dt = new Date(`${y}-${m}-${d}`);
-    monthLive[dt.getMonth()]++;
+    const idx = dt.getMonth();
+
+    const st = getStatus(r);
+    const sqft = getSqft(r);
+
+    if (!st.includes("cancel")) {
+      monthLive[idx]++;
+      monthSqft[idx] += sqft;
+    } else {
+      monthCancel[idx]++;
+      monthCancelSqft[idx] += sqft;
+    }
   });
 
+  /* FIND BEST & WORST MONTH */
   const bestMonth = monthLive.indexOf(Math.max(...monthLive));
   const worstMonth = monthLive.indexOf(Math.min(...monthLive));
 
+  /* UPDATE UI */
   document.getElementById("insightBox").innerHTML = `
     <b>Top Performing Teams:</b><br>
     ${top3.join(", ")}<br><br>
@@ -370,8 +547,16 @@ function generateInsights() {
     ${worst3.join(", ")}<br><br>
 
     <b>Best Month:</b> ${monthNames[bestMonth]}<br>
-<b>Weakest Month:</b> ${monthNames[worstMonth]}
+    (Live: <b>${monthLive[bestMonth]}</b> |
+     SQ.FT: <b>${monthSqft[bestMonth].toLocaleString()}</b> |
+     Cancel: <b>${monthCancel[bestMonth]}</b> |
+     Cancel SQ.FT: <b>${monthCancelSqft[bestMonth].toLocaleString()}</b>)<br><br>
 
+    <b>Weakest Month:</b> ${monthNames[worstMonth]}<br>
+    (Live: <b>${monthLive[worstMonth]}</b> |
+     SQ.FT: <b>${monthSqft[worstMonth].toLocaleString()}</b> |
+     Cancel: <b>${monthCancel[worstMonth]}</b> |
+     Cancel SQ.FT: <b>${monthCancelSqft[worstMonth].toLocaleString()}</b>)
   `;
 }
 
