@@ -94,6 +94,24 @@ canvas {
 <h1>📊 Strategy Insights Dashboard</h1>
 <p class="subtext">Single-page advanced strategy analytics using the same logic as your Team-wise dashboard.</p>
 
+<!-- ######################################### -->
+<button id="downloadBtn" style="
+  background:#4f8cff;
+  color:#ffffff;
+  font-weight:600;
+  border:none;
+  border-radius:8px;
+  padding:8px 16px;
+  cursor:pointer;
+  font-size:13px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  margin-bottom:20px;
+">
+  ⬇️ Download PDF
+</button>
+
+<!-- ######################################## -->
+
 <!-- KPI ROW 1 -->
 
 <div class="kpi-row">
@@ -126,6 +144,8 @@ canvas {
     <div class="kpi-value" id="kpiCancelSqft">0</div>
   </div>
 </div>
+
+
 
 <!-- CHART GRID -->
 <div class="grid">
@@ -238,16 +258,23 @@ function getTeam(row) {
 
 /* Status */
 function getStatus(row) {
-  let key = Object.keys(row).find(k =>
-    k.toLowerCase().replace(/\s+/g," ").trim() === "rough daily updation"
+  const key = Object.keys(row).find(k =>
+    k.toLowerCase().replace(/[^a-z]/g,"") === "roughdailyupdation"
   );
-  return key ? String(row[key]).toLowerCase() : "";
+  return key ? String(row[key]).toLowerCase().trim() : "";
 }
+
 
 /* SQFT */
 function getSqft(row) {
-  return parseInt(row["Actual TOTAL SQ-FT"] || row["Actual Total Sq-ft"] || 0);
+  let raw = row["Actual TOTAL SQ-FT"] || row["Actual Total Sq-ft"] || "0";
+
+  // Remove commas, spaces, text like "sqft", etc.
+  raw = String(raw).replace(/[^0-9]/g, "");
+
+  return raw ? parseInt(raw) : 0;
 }
+
 
 /* KPI 1: COUNT BASED */
 function computeKPIs() {
@@ -592,6 +619,58 @@ function aiInsights() {
   `;
 }
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+
+<script>
+document.getElementById("downloadBtn").addEventListener("click", async () => {
+  const { jsPDF } = window.jspdf;
+
+  const button = document.getElementById("downloadBtn");
+  const dashboard = document.body;  // capture full page
+
+  // Hide button for clean capture
+  button.style.visibility = "hidden";
+  window.scrollTo(0, 0);
+
+  try {
+    const canvas = await html2canvas(dashboard, {
+      scale: 2.5,
+      useCORS: true,
+      backgroundColor: "#eef2f7",
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+    const pdfWidth = canvas.width * 0.264583;
+    const pdfHeight = canvas.height * 0.264583;
+
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? "l" : "p",
+      unit: "mm",
+      format: [pdfWidth, pdfHeight]
+    });
+
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
+    const now = new Date();
+    const fileName =
+      `Strategy_Report_${now.getDate()}_${now.getMonth()+1}_${now.getFullYear()}.pdf`;
+
+    pdf.save(fileName);
+
+  } catch (err) {
+    console.error("PDF error:", err);
+    alert("PDF download failed");
+  } finally {
+    button.style.visibility = "visible";
+  }
+});
+</script>
+
 
 </body>
 </html>

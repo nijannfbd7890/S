@@ -51,6 +51,22 @@
 <body>
 
 <a href="Source_Wise_Report.html" class="back-btn">← Back to Source Wise Report</a>
+<!-- ####################################### -->
+<button id="downloadPdfBtn" style="
+  background:#4f8cff;
+  color:#ffffff;
+  font-weight:600;
+  border:none;
+  border-radius:8px;
+  padding:8px 16px;
+  cursor:pointer;
+  font-size:13px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  margin-bottom:18px;
+">
+  ⬇️ Download PDF
+</button>
+<!-- ####################################### -->
 
 <h1>📊 Source Strategy Summary Dashboard</h1>
 <p class="subtext">Deep insights based on Success, Unsuccess & SQ.FT contribution by Source.</p>
@@ -333,6 +349,54 @@ function runSourceDashboard(fullData, COL_SOURCE, COL_STATUS, COL_SQFT, COL_YEAR
 }
 
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+document.getElementById("downloadPdfBtn").addEventListener("click", async () => {
+  const { jsPDF } = window.jspdf;
 
+  const btn = document.getElementById("downloadPdfBtn");
+  const fullPage = document.body;  // capture entire Year-wise report page
+
+  // Hide button while capturing clean snapshot
+  btn.style.visibility = "hidden";
+  window.scrollTo(0, 0);
+
+  try {
+    const canvas = await html2canvas(fullPage, {
+      scale: 2.4,
+      useCORS: true,
+      backgroundColor: "#eef3f9",
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+    const pdfWidth = canvas.width * 0.264583;   // px → mm
+    const pdfHeight = canvas.height * 0.264583;
+
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? "l" : "p",
+      unit: "mm",
+      format: [pdfWidth, pdfHeight]
+    });
+
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
+    const now = new Date();
+    const fileName =
+      `Source_Wise_Strategy_Report_${now.getDate()}_${now.getMonth()+1}_${now.getFullYear()}.pdf`;
+
+    pdf.save(fileName);
+
+  } catch (err) {
+    console.error("PDF Error:", err);
+    alert("PDF download failed — check console.");
+  } finally {
+    btn.style.visibility = "visible";
+  }
+});
+</script>
 </body>
 </html>
