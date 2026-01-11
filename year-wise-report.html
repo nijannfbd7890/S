@@ -283,9 +283,22 @@ Papa.parse("https://nijannfbd7890.github.io/S/Year_Wise_Booking_Report.csv", {
         });
 
         /* ---------------------- GRAND TOTAL ROW ---------------------- */
-        let totalHTML = `<tr class="grand-total">
-            <td></td>
-            <td>Grand Total</td>`;
+       // Calculate the true overall totals
+let overallCountTotal = 0;
+let overallSqftTotal = 0;
+
+YEARS.forEach(year => {
+    overallCountTotal += totals[year].successCount + totals[year].unsuccessCount;
+    overallSqftTotal += totals[year].successSqft + totals[year].unsuccessSqft;
+});
+
+let totalHTML = `<tr class="grand-total">
+    <td></td>
+    <td>Grand Total</td>
+    <td>${overallCountTotal}</td>
+    <td>${overallSqftTotal}</td>
+`;
+
 
         YEARS.forEach(year => {
             const t = totals[year];
